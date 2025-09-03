@@ -180,6 +180,39 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  const verifyResetCode = useCallback(async (email, code) => {
+    try {
+      const response = await apiClient.post('/user/verify-reset-code', { email, code });
+      if (response.data.success) {
+        return { success: true, message: response.data.message };
+      } else {
+        return { success: false, error: response.data.message };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Failed to verify reset code'
+      };
+    }
+  }, []);
+
+  const resendResetCode = useCallback(async (email) => {
+    try {
+      const response = await apiClient.post('/user/forgot-password', { email });
+      if (response.data.success) {
+        return { success: true, message: response.data.message };
+      } else {
+        return { success: false, error: response.data.message };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Failed to resend reset code'
+      };
+    }
+  }, []);
+
+
   const value = useMemo(() => {
     const isAuth = !!user;
     
@@ -193,6 +226,8 @@ export const AuthProvider = ({ children }) => {
       changePassword,
       forgotPassword,
       resetPassword,
+      verifyResetCode,   // 👈 add here
+      resendResetCode, 
       resetPasswordWithToken,
       checkAuthStatus
     };

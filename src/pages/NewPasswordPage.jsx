@@ -44,34 +44,18 @@ const NewPasswordPage = () => {
   const canSubmit = useMemo(() => {
     return email && token && password && confirmPassword && password === confirmPassword;
   }, [email, token, password, confirmPassword]);
-
-  const redirectByRole = (role) => {
-    switch ((role || '').toLowerCase()) {
-      case 'consultant':
-        return '/mon-cra';
-      case 'manager':
-        return '/dashboard';
-      case 'admin':
-        return '/accounts';
-      default:
-        return '/mon-cra';
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!canSubmit) return;
     safeSetState(setSubmitting, true);
     try {
       const res = await resetPasswordWithToken(email, password, token);
-      if (isMountedRef.current) {
         if (res.success) {
           toast({ title: 'Bienvenue', description: 'Connexion réussie.' });
-          navigate(redirectByRole(res.data?.user?.role), { replace: true });
+          navigate('/');
         } else {
           toast({ variant: 'destructive', title: 'Erreur', description: res.error || 'Échec.' });
         }
-      }
     } finally {
       safeSetState(setSubmitting, false);
     }

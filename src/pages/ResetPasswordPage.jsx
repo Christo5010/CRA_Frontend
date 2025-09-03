@@ -90,9 +90,7 @@ const ResetPasswordPage = () => {
     if (!canSubmitPassword) return;
     setSubmitting(true);
     try {
-      const token = searchParams.get('token') || '';
-      console.log(token)
-      const res = await resetPassword(email, code,token, password);
+      const res = await resetPassword(email, code, password);
         if (res.success) {
           toast({ title: 'Mot de passe mis à jour', description: 'Vous pouvez vous connecter.' });
           navigate('/', { replace: true });
