@@ -17,10 +17,7 @@ const AccountSettingsPage = () => {
   // Profile form state
   const [profileForm, setProfileForm] = useState({
     name: user?.name || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
-    address: user?.address || '',
-    bio: user?.bio || ''
+    email: user?.email || ''
   });
   
   // Password form state
@@ -180,40 +177,8 @@ const AccountSettingsPage = () => {
                 placeholder="votre@email.com"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone">Téléphone</Label>
-              <Input
-                id="phone"
-                value={profileForm.phone}
-                onChange={(e) => handleProfileChange('phone', e.target.value)}
-                disabled={!isEditing}
-                placeholder="+33 6 12 34 56 78"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="address">Adresse</Label>
-              <Input
-                id="address"
-                value={profileForm.address}
-                onChange={(e) => handleProfileChange('address', e.target.value)}
-                disabled={!isEditing}
-                placeholder="Votre adresse"
-              />
-            </div>
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="bio">Bio</Label>
-            <textarea
-              id="bio"
-              value={profileForm.bio}
-              onChange={(e) => handleProfileChange('bio', e.target.value)}
-              disabled={!isEditing}
-              placeholder="Parlez-nous un peu de vous..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
-              rows={3}
-            />
-          </div>
 
           <div className="flex justify-end space-x-2 pt-4">
             {!isEditing ? (

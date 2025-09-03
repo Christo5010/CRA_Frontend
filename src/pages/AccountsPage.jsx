@@ -30,11 +30,12 @@ import { toast } from '@/components/ui/use-toast';
 
 const RoleBadge = ({ role }) => {
   const roleClasses = {
-    Admin: "bg-red-100 text-red-800",
-    Manager: "bg-blue-100 text-blue-800",
-    Consultant: "bg-green-100 text-green-800",
+    admin: "bg-red-100 text-red-800",
+    manager: "bg-blue-100 text-blue-800",
+    consultant: "bg-green-100 text-green-800",
   };
-  return <span className={`px-2 py-1 text-xs font-medium rounded-full ${roleClasses[role]}`}>{role}</span>;
+  const displayRole = role ? role.charAt(0).toUpperCase() + role.slice(1) : role;
+  return <span className={`px-2 py-1 text-xs font-medium rounded-full ${roleClasses[role?.toLowerCase()] || 'bg-gray-100 text-gray-800'}`}>{displayRole}</span>;
 };
 
 const AccountsPage = () => {
@@ -48,7 +49,7 @@ const AccountsPage = () => {
   const openUserModal = (user = null) => {
     const userData = user ? 
       {...user, client_id: user.clients?.id || user.client_id || null} : 
-      { name: '', email: '', role: 'Consultant', active: true, client_id: null };
+      { name: '', email: '', role: 'consultant', active: true, client_id: null };
     setCurrentUser(userData);
     setIsUserModalOpen(true);
   };
@@ -64,12 +65,29 @@ const AccountsPage = () => {
 
   const handleSaveUser = async () => {
     if (currentUser) {
-        if (currentUser.id) {
-            // Placeholder for user update functionality
-            toast({ title: "Compte mis à jour avec succès." });
+        try {
+            if (currentUser.id) {
+                // Update existing user
+                await apiClient.patch(`/user/${currentUser.id}`, currentUser);
+                toast({ title: "Compte mis à jour avec succès." });
+            } else {
+                // Create new user (no password set by admin)
+                const payload = {
+                  name: currentUser.name,
+                  email: currentUser.email,
+                  role: currentUser.role,
+                  client_id: currentUser.client_id || null
+                };
+                await apiClient.post('/user/create', payload);
+                toast({ title: "Compte créé. Une invitation a été envoyée par email." });
+            }
             fetchData();
-        } else {
-            toast({ title: "🚧 La création de compte n'est pas encore implémentée." });
+        } catch (error) {
+            toast({ 
+                variant: "destructive", 
+                title: "Erreur", 
+                description: error.response?.data?.message || "Erreur lors de la sauvegarde du compte." 
+            });
         }
     }
     setIsUserModalOpen(false);
@@ -100,10 +118,21 @@ const AccountsPage = () => {
     setIsClientModalOpen(false);
   }
   
-  const handleDeleteUser = (id) => {
-     toast({ title: "🚧 Cette fonctionnalité n'est pas encore implémentée—mais ne vous inquiétez pas ! Vous pouvez la demander dans votre prochaine requête ! 🚀" });
+  const handleDeleteUser = async (userId) => {
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ? Cette action est irréversible.')) {
+        try {
+            await apiClient.delete(`/user/${userId}`);
+            toast({ title: "Utilisateur supprimé avec succès." });
+            fetchData();
+        } catch (error) {
+            toast({ 
+                variant: "destructive", 
+                title: "Erreur", 
+                description: error.response?.data?.message || "Erreur lors de la suppression de l'utilisateur." 
+            });
+        }
+    }
   }
-
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }} className="space-y-8">
       <div>
@@ -124,21 +153,32 @@ const AccountsPage = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {profiles.map((user) => (
-                  <TableRow key={user.id} className="table-row-hover">
-                    <TableCell className="font-medium">{user.name}</TableCell>
-                    <TableCell>{user.clients?.name || 'N/A'}</TableCell>
-                    <TableCell><RoleBadge role={user.role} /></TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${user.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>{user.active ? 'Actif' : 'Inactif'}</span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" onClick={() => openUserModal(user)}><Edit className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDeleteUser(user.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {profiles.map((user) => {
+                  const clientName = clients.find(c => c.id === user.client_id)?.name || 'N/A';
+
+                  return (
+                    <TableRow key={user.id} className="table-row-hover">
+                      <TableCell className="font-medium">{user.name}</TableCell>
+                      <TableCell>{clientName}</TableCell>
+                      <TableCell><RoleBadge role={user.role} /></TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${user.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                          {user.active ? 'Actif' : 'Inactif'}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" onClick={() => openUserModal(user)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDeleteUser(user.id)}>
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
+
             </Table>
           </CardContent>
         </Card>
@@ -184,20 +224,32 @@ const AccountsPage = () => {
             <DialogTitle>{currentUser?.id ? "Modifier le compte" : "Créer un compte"}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <Label htmlFor="name">Nom</Label><Input id="name" value={currentUser?.name || ''} onChange={(e) => setCurrentUser({...currentUser, name: e.target.value})} />
+            <Label htmlFor="name">Nom</Label>
+            <Input id="name" value={currentUser?.name || ''} onChange={(e) => setCurrentUser({...currentUser, name: e.target.value})} />
+            
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" type="email" value={currentUser?.email || ''} onChange={(e) => setCurrentUser({...currentUser, email: e.target.value})} />
+            
+            {/* Password is not set by admin. Users will receive an invite to set their password. */}
+            
             <Label>Rôle</Label>
             <Select value={currentUser?.role} onValueChange={(value) => setCurrentUser({...currentUser, role: value})}>
               <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent><SelectItem value="Consultant">Consultant</SelectItem><SelectItem value="Manager">Manager</SelectItem><SelectItem value="Admin">Admin</SelectItem></SelectContent>
+              <SelectContent><SelectItem value="consultant">Consultant</SelectItem><SelectItem value="manager">Manager</SelectItem><SelectItem value="admin">Admin</SelectItem></SelectContent>
             </Select>
-            {currentUser?.role === 'Consultant' && (
+            
+            {currentUser?.role === 'consultant' && (
               <><Label>Client</Label>
               <Select value={currentUser?.client_id || ''} onValueChange={(value) => setCurrentUser({...currentUser, client_id: value})}>
                   <SelectTrigger><SelectValue placeholder="Sélectionner un client" /></SelectTrigger>
                   <SelectContent>{clients.map(client => <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>)}</SelectContent>
               </Select></>
             )}
-             <div className="flex items-center space-x-2"><Switch id="active" checked={currentUser?.active} onCheckedChange={(checked) => setCurrentUser({...currentUser, active: checked})} /><Label htmlFor="active">Actif</Label></div>
+            
+            <div className="flex items-center space-x-2">
+              <Switch id="active" checked={currentUser?.active} onCheckedChange={(checked) => setCurrentUser({...currentUser, active: checked})} />
+              <Label htmlFor="active">Actif</Label>
+            </div>
           </div>
           <DialogFooter><Button variant="outline" onClick={() => setIsUserModalOpen(false)}>Annuler</Button><Button onClick={handleSaveUser}>Enregistrer</Button></DialogFooter>
         </DialogContent>

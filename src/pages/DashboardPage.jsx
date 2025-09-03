@@ -98,9 +98,8 @@ const DashboardPage = () => {
     };
     
     const { consultantsCount, aRelancer, soumis, valides, signes, consultantsToRemind } = useMemo(() => {
-        const consultantsInPeriod = profiles.filter(p => p.role === 'Consultant');
+        const consultantsInPeriod = profiles.filter(p => p.role === 'consultant');
         let allCRAsForPeriod = [];
-        
         const start = filters.dateRange.from || new Date('2000-01-01');
         const end = filters.dateRange.to || new Date('2100-01-01');
 
@@ -108,23 +107,26 @@ const DashboardPage = () => {
             let month = new Date(start);
             while(month <= end) {
                 const existingCRA = cras.find(c => 
-                    c.user_id === consultant.id && 
-                    getMonth(c.month) === getMonth(month) &&
-                    getYear(c.month) === getYear(month)
+                    c.user_id === consultant.id &&
+                    getMonth(parseISO(c.month)) === getMonth(month) &&
+                    getYear(parseISO(c.month)) === getYear(month)
                 );
+
+                const days = existingCRA?.days ? JSON.parse(existingCRA.days) : null;
 
                 const craData = {
                     id: existingCRA ? existingCRA.id : `${consultant.id}-${format(month, 'yyyy-MM')}`,
                     consultantName: consultant.name,
-                    clientName: consultant.clients?.name,
+                    clientName: clients.find(c => c.id === consultant.client_id)?.name || 'N/A',
                     month: month,
                     status: existingCRA ? existingCRA.status : 'Non créé',
-                    totalDays: existingCRA?.days ? Object.values(existingCRA.days).reduce((acc, day) => {
+                    totalDays: days ? Object.values(days).reduce((acc, day) => {
                         if (day.status === 'worked_1') return acc + 1;
                         if (day.status === 'worked_0_5') return acc + 0.5;
                         return acc;
                     }, 0) : 0,
                 };
+
                 allCRAsForPeriod.push(craData);
                 month = addMonths(month, 1);
             }

@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
-import apiClient from '@/lib/apiClient';
+import apiClient, { setTokens, clearTokens } from '@/lib/apiClient';
 
 const AuthContext = createContext(undefined);
 
@@ -16,7 +16,12 @@ export const AuthProvider = ({ children }) => {
     
     try {
       setAuthChecked(true);
-      
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
       const response = await apiClient.get('/user/get-user');
       
       if (response.data.success) {
@@ -45,6 +50,9 @@ export const AuthProvider = ({ children }) => {
 
       if (response.data.success) {
         const { user: userData } = response.data.data;
+        const accessToken = response.data.data?.accessToken;
+        const refreshToken = response.data.data?.refreshToken;
+        setTokens({ accessToken, refreshToken });
         setUser(userData);
         return { success: true, data: userData };
       } else {
@@ -64,6 +72,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       // Logout error - continue anyway
     } finally {
+      clearTokens();
       setUser(null);
     }
   }, []);

@@ -148,14 +148,28 @@ const ManagementCRAPage = () => {
         }
     });
 
-    return allCRAsForPeriod.filter(cra => {
-        if (filters.consultant !== 'Tous' && cra.consultantName !== filters.consultant) return false;
-        if (filters.client !== 'Tous' && cra.clientName !== filters.client) return false;
-        if (filters.status !== 'Tous' && cra.status !== filters.status) return false;
-        if (filters.searchTerm && !(cra.consultantName && cra.consultantName.toLowerCase().includes(filters.searchTerm.toLowerCase()))) return false;
-        return true;
-    }).sort((a, b) => b.month - a.month || a.consultantName.localeCompare(b.consultantName));
-  }, [cras, profiles, filters]);
+  //   return allCRAsForPeriod.filter(cra => {
+  //       if (filters.consultant !== 'Tous' && cra.consultantName !== filters.consultant) return false;
+  //       if (filters.client !== 'Tous' && cra.clientName !== filters.client) return false;
+  //       if (filters.status !== 'Tous' && cra.status !== filters.status) return false;
+  //       if (filters.searchTerm && !(cra.consultantName && cra.consultantName.toLowerCase().includes(filters.searchTerm.toLowerCase()))) return false;
+  //       return true;
+  //   }).sort((a, b) => b.month - a.month || a.consultantName.localeCompare(b.consultantName));
+  // }, [cras, profiles, filters]);
+
+  return allCRAsForPeriod
+    .filter(cra => {
+      if (filters.consultant !== 'Tous' && cra.consultantName !== filters.consultant) return false;
+      if (filters.client !== 'Tous' && cra.clientName !== filters.client) return false;
+      if (filters.status !== 'Tous' && cra.status !== filters.status) return false;
+      if (filters.searchTerm && !(cra.consultantName && cra.consultantName.toLowerCase().includes(filters.searchTerm.toLowerCase()))) return false;
+      return true;
+    })
+    .sort((a, b) => 
+      b.month - a.month || 
+      ((a.consultantName || '').localeCompare(b.consultantName || ''))
+    )}, [cras, profiles, filters]);
+
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }} className="space-y-6">

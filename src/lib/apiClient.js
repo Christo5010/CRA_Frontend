@@ -4,17 +4,30 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://cra-backend.vercel
 
 // const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/v1/api';
 
+export const setTokens = ({ accessToken, refreshToken }) => {
+  if (accessToken) localStorage.setItem('accessToken', accessToken);
+  if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+};
+
+export const clearTokens = () => {
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
+};
+
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true,
+  withCredentials: false,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Request interceptor - cookies are sent automatically with withCredentials: true
 apiClient.interceptors.request.use(
   (config) => {
+    const token = localStorage.getItem('accessToken');
+    if (token && !config.headers.Authorization) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
   (error) => {
@@ -34,17 +47,29 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        // Try to refresh using cookies
-        const response = await axios.post(`${API_BASE_URL}/user/refresh-token`, {}, { 
-          withCredentials: true 
-        });
+        // Try to refresh using refreshToken from localStorage
+        const storedRefresh = localStorage.getItem('refreshToken');
+        if (!storedRefresh) {
+          clearTokens();
+          try { window.location.href = '/'; } catch (_) {}
+          throw new Error('No refresh token');
+        }
+        const response = await axios.post(`${API_BASE_URL}/user/refresh-token`, { refreshToken: storedRefresh });
 
         if (response.data.success) {
+          const newAccess = response.data.data?.accessToken;
+          const newRefresh = response.data.data?.refreshToken;
+          if (newAccess) localStorage.setItem('accessToken', newAccess);
+          if (newRefresh) localStorage.setItem('refreshToken', newRefresh);
+          originalRequest.headers = originalRequest.headers || {};
+          originalRequest.headers.Authorization = `Bearer ${newAccess}`;
           // Retry the original request
           return apiClient(originalRequest);
         }
       } catch (refreshError) {
-        // Don't redirect automatically - let the auth context handle it
+        // Clear tokens and force redirect to login
+        clearTokens();
+        try { window.location.href = '/'; } catch (_) {}
         return Promise.reject(refreshError);
       }
     }

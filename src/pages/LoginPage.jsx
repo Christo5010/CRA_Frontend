@@ -64,7 +64,6 @@ const LoginPage = () => {
     }
   };
 
-  // Show a generic loader if auth is processing or if the user is authenticated but not yet redirected.
   if (authLoading || (!authLoading && isAuthenticated)) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-100">
@@ -137,10 +136,7 @@ const LoginPage = () => {
 
           
           <div className="mt-6 text-center text-xs text-gray-400 bg-gray-50 p-3 rounded-lg">
-            <p className="font-semibold mb-1">Comptes démo (mdp: password123):</p>
-            <p>consultant@example.com</p>
-            <p>manager@example.com</p>
-            <p>admin@example.com</p>
+            <p className="font-semibold mb-1">Mot de passe oublié?</p>
           </div>
         </div>
       </div>
