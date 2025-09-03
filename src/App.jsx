@@ -10,6 +10,8 @@ import MyDocumentsPage from '@/pages/MyDocumentsPage';
 import AccountsPage from '@/pages/AccountsPage';
 import AccountSettingsPage from '@/pages/AccountSettingsPage';
 import { useAuth } from '@/contexts/AuthContext';
+import ResetPasswordPage from '@/pages/ResetPasswordPage';
+import NewPasswordPage from '@/pages/NewPasswordPage';
 
 const PrivateRoute = ({ children, roles }) => {
   const { isAuthenticated, user, loading } = useAuth();
@@ -66,6 +68,8 @@ const AppRoutes = () => {
     return (
         <Routes>
             <Route path="/" element={<LoginPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/new-password" element={<NewPasswordPage />} />
             <Route 
                 path="/mon-cra" 
                 element={<PrivateRoute roles={['consultant', 'manager', 'admin']}><AppLayout><CRAPage /></AppLayout></PrivateRoute>} 

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { LogIn, User, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -133,15 +133,19 @@ const LoginPage = () => {
             </div>
           </form>
           
-
+          <div className="mt-6 text-center text-sm text-gray-600">
+            <Link to={`/reset-password?email=${encodeURIComponent(email || '')}`} className="hover:underline">
+              Mot de passe oublié ?
+            </Link>
+          </div>
           
           <div className="mt-6 text-center text-xs text-gray-400 bg-gray-50 p-3 rounded-lg">
-            <p className="font-semibold mb-1">Mot de passe oublié?</p>
+            <p className="font-semibold mb-1">Besoin d'aide ? Contactez votre administrateur.</p>
           </div>
         </div>
       </div>
       
-      <style jsx>{`
+      <style>{`
         @keyframes fadeInUp {
           from {
             opacity: 0;

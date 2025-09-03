@@ -151,6 +151,35 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  const resetPasswordWithToken = useCallback(async (email, newPassword, token) => {
+    try {
+      const response = await apiClient.post('/user/reset-password', {
+        email,
+        newPassword,
+        token
+      });
+      
+      if (response.data.success) {
+        // If successful and we get user data back, set the user and tokens
+        if (response.data.data?.accessToken) {
+          setTokens({ 
+            accessToken: response.data.data.accessToken, 
+            refreshToken: response.data.data.refreshToken 
+          });
+          setUser(response.data.data.user);
+        }
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message };
+      }
+    } catch (error) {
+      return { 
+        success: false, 
+        error: error.response?.data?.message || 'Failed to reset password' 
+      };
+    }
+  }, []);
+
   const value = useMemo(() => {
     const isAuth = !!user;
     
@@ -164,9 +193,10 @@ export const AuthProvider = ({ children }) => {
       changePassword,
       forgotPassword,
       resetPassword,
+      resetPasswordWithToken,
       checkAuthStatus
     };
-  }, [user, loading, signIn, signOut, updateProfile, changePassword, forgotPassword, resetPassword, checkAuthStatus]);
+  }, [user, loading, signIn, signOut, updateProfile, changePassword, forgotPassword, resetPassword, resetPasswordWithToken, checkAuthStatus]);
 
   return (
     <AuthContext.Provider value={value}>
