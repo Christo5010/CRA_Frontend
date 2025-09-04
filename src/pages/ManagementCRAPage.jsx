@@ -130,12 +130,17 @@ const ManagementCRAPage = () => {
           return acc;
         }, 0) : 0;
         return {
+          // Include full CRA data for preview first
+          ...c,
+          // Then override with calculated fields
           id: c.id,
           consultantName,
           clientName,
           month: monthDate,
           status: c.status,
           totalDays,
+          consultant: consultantName,
+          client: clientName,
         };
       });
 
@@ -170,8 +175,10 @@ const ManagementCRAPage = () => {
         );
 
         const craData = {
-          id: existingCRA ? existingCRA.id : `${consultant.id}-${format(month, 'yyyy-MM')}`,
+          // Include full CRA data for preview first
           ...existingCRA,
+          // Then override with calculated fields
+          id: existingCRA ? existingCRA.id : `${consultant.id}-${format(month, 'yyyy-MM')}`,
           consultantName: consultant.name,
           clientName: clients.find(c => c.id === consultant.client_id)?.name || 'Non assigné',
           month: month,
@@ -181,6 +188,8 @@ const ManagementCRAPage = () => {
             if (day.status === 'worked_0_5') return acc + 0.5;
             return acc;
           }, 0) : 0,
+          consultant: consultant.name,
+          client: clients.find(c => c.id === consultant.client_id)?.name || 'Non assigné',
         };
         allCRAsForPeriod.push(craData);
         month = addMonths(month, 1);

@@ -43,7 +43,8 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Only attempt token refresh for authenticated requests (not login attempts)
+    if (error.response?.status === 401 && !originalRequest._retry && originalRequest.headers?.Authorization) {
       originalRequest._retry = true;
 
       try {
@@ -51,7 +52,10 @@ apiClient.interceptors.response.use(
         const storedRefresh = localStorage.getItem('refreshToken');
         if (!storedRefresh) {
           clearTokens();
-          try { window.location.href = '/'; } catch (_) {}
+          // Only redirect if this was an authenticated request (not a login attempt)
+          if (originalRequest.headers?.Authorization) {
+            try { window.location.href = '/'; } catch (_) {}
+          }
           throw new Error('No refresh token');
         }
         const response = await axios.post(`${API_BASE_URL}/user/refresh-token`, { refreshToken: storedRefresh });
@@ -67,9 +71,11 @@ apiClient.interceptors.response.use(
           return apiClient(originalRequest);
         }
       } catch (refreshError) {
-        // Clear tokens and force redirect to login
+        // Clear tokens and force redirect to login only for authenticated requests
         clearTokens();
-        try { window.location.href = '/'; } catch (_) {}
+        if (originalRequest.headers?.Authorization) {
+          try { window.location.href = '/'; } catch (_) {}
+        }
         return Promise.reject(refreshError);
       }
     }
