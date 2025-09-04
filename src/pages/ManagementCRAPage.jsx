@@ -109,7 +109,6 @@ const ManagementCRAPage = () => {
       dataToUpdate.status = nextStatus;
       await updateCRA(cra.id, dataToUpdate);
     } else {
-      console.warn('[ManagementCRAPage] invalid action', action);
       toast({ title: "Action impossible", variant: "destructive" });
     }
   };

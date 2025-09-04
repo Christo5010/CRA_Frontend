@@ -89,7 +89,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return { 
         success: false, 
-        error: error.response?.data?.message || 'Failed to update profile' 
+        error: error.response?.data?.message || 'Échec de la mise à jour du profil' 
       };
     }
   }, []);
@@ -109,7 +109,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return { 
         success: false, 
-        error: error.response?.data?.message || 'Failed to change password' 
+        error: error.response?.data?.message || 'Échec du changement de mot de passe' 
       };
     }
   }, []);
@@ -125,7 +125,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return { 
         success: false, 
-        error: error.response?.data?.message || 'Failed to send reset email' 
+        error: error.response?.data?.message || 'Échec de l\'envoi de l\'email de réinitialisation' 
       };
     }
   }, []);
@@ -146,7 +146,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return { 
         success: false, 
-        error: error.response?.data?.message || 'Failed to reset password' 
+        error: error.response?.data?.message || 'Échec de la réinitialisation du mot de passe' 
       };
     }
   }, []);
@@ -175,7 +175,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return { 
         success: false, 
-        error: error.response?.data?.message || 'Failed to reset password' 
+        error: error.response?.data?.message || 'Échec de la réinitialisation du mot de passe' 
       };
     }
   }, []);
@@ -191,7 +191,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return {
         success: false,
-        error: error.response?.data?.message || 'Failed to verify reset code'
+        error: error.response?.data?.message || 'Échec de la vérification du code de réinitialisation'
       };
     }
   }, []);
@@ -207,7 +207,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return {
         success: false,
-        error: error.response?.data?.message || 'Failed to resend reset code'
+        error: error.response?.data?.message || 'Échec du renvoi du code de réinitialisation'
       };
     }
   }, []);
@@ -243,7 +243,7 @@ export const AuthProvider = ({ children }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error('useAuth doit être utilisé dans un AuthProvider');
   }
   return context;
 };

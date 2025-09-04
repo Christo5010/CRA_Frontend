@@ -50,7 +50,6 @@ const ResetPasswordPage = () => {
     setRequesting(true);
     try {
       const res = await forgotPassword(email);
-      console.log("forgotPassword response:", isMountedRef);
         if (res.success) {
           toast({ title: 'Code envoyé', description: 'Vérifiez votre mail.' });
           setStep(2);

@@ -10,7 +10,7 @@ const AppContext = createContext(null);
 export const useAppData = () => {
     const context = useContext(AppContext);
     if (!context) {
-        throw new Error('useAppData must be used within an AppProvider');
+        throw new Error('useAppData doit être utilisé dans un AppProvider');
     }
     return context;
 }
@@ -109,7 +109,6 @@ export const AppProvider = ({ children }) => {
                         allProfiles = response.data.data;
                     }
                 } catch (error) {
-                    console.warn('[AppContext] /user/all failed', error);
                 }
             }
             
@@ -124,7 +123,6 @@ export const AppProvider = ({ children }) => {
                         setClients(clientsResponse.data.data);
                     }
                 } catch (error) {
-                    console.warn('[AppContext] /client failed', error);
                 }
             } else if (user.role === 'consultant') {
                 // Consultants can fetch their assigned client
@@ -137,7 +135,6 @@ export const AppProvider = ({ children }) => {
                         setClients([]);
                     }
                 } catch (error) {
-                    console.warn('[AppContext] /client/my-client failed', error);
                     setClients([]);
                 }
             } else {
@@ -171,7 +168,6 @@ export const AppProvider = ({ children }) => {
                                         setCras([]);
                                     }
                                 } catch (err) {
-                                    console.warn('[AppContext] fallback /cra/all failed', err);
                                     setCras([]);
                                 }
                             } else {
@@ -201,7 +197,6 @@ export const AppProvider = ({ children }) => {
                             setCras([]);
                         }
                     } catch (e) {
-                        console.warn('[AppContext] /cra/dashboard failed', e);
                         setCras([]);
                     }
                 } else {
@@ -213,7 +208,6 @@ export const AppProvider = ({ children }) => {
                     }
                 }
             } catch (error) {
-                console.error('[AppContext] fetch CRAs failed', error);
                 // Could not fetch CRAs
                 setCras([]);
             }
@@ -227,7 +221,6 @@ export const AppProvider = ({ children }) => {
                         setActionLogs(logsResponse.data.data.logs || []);
                     }
                 } catch (error) {
-                    console.warn('[AppContext] /action-log/dashboard failed', error);
                 }
             } else {
                 setActionLogs([]);
@@ -277,7 +270,6 @@ export const AppProvider = ({ children }) => {
                 fetchData(true);
             }
         } catch (error) {
-            console.error('[AppContext] updateCRA failed', error);
             toast({ variant: 'destructive', title: 'Erreur', description: 'La mise à jour du CRA a échoué.' });
         }
     };
@@ -301,7 +293,6 @@ export const AppProvider = ({ children }) => {
                 fetchData(true);
             }
         } catch (error) {
-            console.error('[AppContext] createCRA failed', error);
             toast({ variant: 'destructive', title: 'Erreur', description: 'La création du CRA a échoué.' });
         }
     };
@@ -318,7 +309,6 @@ export const AppProvider = ({ children }) => {
                 fetchData(true);
             }
         } catch (error) {
-            console.error('[AppContext] deleteCRA failed', error);
             toast({ variant: 'destructive', title: 'Erreur', description: 'La suppression du CRA a échoué.' });
         }
     };

@@ -56,7 +56,7 @@ apiClient.interceptors.response.use(
           if (originalRequest.headers?.Authorization) {
             try { window.location.href = '/'; } catch (_) {}
           }
-          throw new Error('No refresh token');
+          throw new Error('Aucun jeton de rafraîchissement');
         }
         const response = await axios.post(`${API_BASE_URL}/user/refresh-token`, { refreshToken: storedRefresh });
 
