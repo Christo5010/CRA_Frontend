@@ -108,11 +108,11 @@ const DashboardPage = () => {
             while(month <= end) {
                 const existingCRA = cras.find(c => 
                     c.user_id === consultant.id &&
-                    getMonth(parseISO(c.month)) === getMonth(month) &&
-                    getYear(parseISO(c.month)) === getYear(month)
+                    getMonth((typeof c.month === 'string' ? parseISO(c.month) : c.month)) === getMonth(month) &&
+                    getYear((typeof c.month === 'string' ? parseISO(c.month) : c.month)) === getYear(month)
                 );
 
-                const days = existingCRA?.days ? JSON.parse(existingCRA.days) : null;
+                const days = existingCRA?.days ? (typeof existingCRA.days === 'string' ? JSON.parse(existingCRA.days) : existingCRA.days) : null;
 
                 const craData = {
                     id: existingCRA ? existingCRA.id : `${consultant.id}-${format(month, 'yyyy-MM')}`,
@@ -241,7 +241,7 @@ const DashboardPage = () => {
             <Card>
                  <CardContent className="p-4 space-y-4">
                     <div className="flex flex-wrap items-center gap-2">
-                        <Select value={filters.consultant} onValueChange={(v) => handleFilterChange('consultant', v)}><SelectTrigger className="w-full sm:w-[180px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Tous">Consultant (Tous)</SelectItem>{profiles.filter(p=>p.role==='Consultant').map(u=><SelectItem key={u.id} value={u.name}>{u.name}</SelectItem>)}</SelectContent></Select>
+                        <Select value={filters.consultant} onValueChange={(v) => handleFilterChange('consultant', v)}><SelectTrigger className="w-full sm:w-[180px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Tous">Consultant (Tous)</SelectItem>{profiles.filter(p=>String(p.role).toLowerCase()==='consultant').map(u=><SelectItem key={u.id} value={u.name}>{u.name}</SelectItem>)}</SelectContent></Select>
                         <Select value={filters.client} onValueChange={(v) => handleFilterChange('client', v)}><SelectTrigger className="w-full sm:w-[180px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Tous">Client (Tous)</SelectItem>{clients.map(c=><SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}</SelectContent></Select>
                         <Select value={filters.status} onValueChange={(v) => handleFilterChange('status', v)}><SelectTrigger className="w-full sm:w-[180px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Tous">Statut (Tous)</SelectItem><SelectItem value="Non créé">Non créé</SelectItem><SelectItem value="Brouillon">Brouillon</SelectItem><SelectItem value="À réviser">À réviser</SelectItem><SelectItem value="Soumis">Soumis</SelectItem><SelectItem value="Validé">Validé</SelectItem><SelectItem value="Signature demandée">Signature demandée</SelectItem><SelectItem value="Signé">Signé</SelectItem></SelectContent></Select>
                         <Input placeholder="Recherche consultant..." className="w-full sm:w-[200px]" value={filters.searchTerm} onChange={e => handleFilterChange('searchTerm', e.target.value)} />

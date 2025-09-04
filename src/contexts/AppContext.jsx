@@ -74,7 +74,8 @@ export const AppProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [dataFetched, setDataFetched] = useState(false);
 
-    const fetchData = useCallback(async () => {
+    const fetchData = useCallback(async (forceRefresh = false) => {
+        console.debug('[AppContext] fetchData called', { forceRefresh, isAuthenticated, hasUser: !!user });
         if (!isAuthenticated || !user) {
             setLoading(false);
             setClients([]);
@@ -85,11 +86,15 @@ export const AppProvider = ({ children }) => {
             return;
         };
 
-        if (dataFetched) {
+        if (dataFetched && !forceRefresh) {
+            console.debug('[AppContext] fetchData skipped (cached)');
             return;
         }
 
         setLoading(true);
+        if (forceRefresh) {
+            setDataFetched(false);
+        }
         setDataFetched(true);
 
         try {
@@ -99,11 +104,12 @@ export const AppProvider = ({ children }) => {
             if (user.role === 'admin') {
                 try {
                     const response = await apiClient.get('/user/all');
+                    console.debug('[AppContext] /user/all response', response.data);
                     if (response.data.success) {
                         allProfiles = response.data.data;
                     }
                 } catch (error) {
-                    // Could not fetch all users (might not be admin)
+                    console.warn('[AppContext] /user/all failed', error);
                 }
             }
             
@@ -113,11 +119,26 @@ export const AppProvider = ({ children }) => {
             if (user.role === 'admin' || user.role === 'manager') {
                 try {
                     const clientsResponse = await apiClient.get('/client');
+                    console.debug('[AppContext] /client response', clientsResponse.data);
                     if (clientsResponse.data.success) {
                         setClients(clientsResponse.data.data);
                     }
                 } catch (error) {
-                    // Could not fetch clients
+                    console.warn('[AppContext] /client failed', error);
+                }
+            } else if (user.role === 'consultant') {
+                // Consultants can fetch their assigned client
+                try {
+                    const clientResponse = await apiClient.get('/client/my-client');
+                    console.debug('[AppContext] /client/my-client response', clientResponse.data);
+                    if (clientResponse.data.success && clientResponse.data.data) {
+                        setClients([clientResponse.data.data]);
+                    } else {
+                        setClients([]);
+                    }
+                } catch (error) {
+                    console.warn('[AppContext] /client/my-client failed', error);
+                    setClients([]);
                 }
             } else {
                 setClients([]);
@@ -128,23 +149,71 @@ export const AppProvider = ({ children }) => {
                 if (user.role === 'admin') {
                     // Admin gets all CRAs
                     const crasResponse = await apiClient.get('/cra/all');
+                    console.debug('[AppContext] /cra/all response', crasResponse.data);
                     if (crasResponse.data.success) {
                         setCras(crasResponse.data.data);
                     }
                 } else if (user.role === 'manager') {
                     // Manager gets dashboard CRAs
-                    const crasResponse = await apiClient.get('/cra/dashboard');
-                    if (crasResponse.data.success) {
-                        setCras(crasResponse.data.data);
+                    try {
+                        const crasResponse = await apiClient.get('/cra/dashboard');
+                        console.debug('[AppContext] /cra/dashboard response', crasResponse.data);
+                        if (crasResponse.data.success) {
+                            const dashboardCRAs = crasResponse.data.data || [];
+                            // Fallback: if dashboard returns empty, try admin-all to avoid empty screens (will 403 for non-admin)
+                            if (dashboardCRAs.length === 0) {
+                                try {
+                                    const allResp = await apiClient.get('/cra/all');
+                                    console.debug('[AppContext] fallback /cra/all response', allResp.data);
+                                    if (allResp.data.success) {
+                                        setCras(allResp.data.data);
+                                    } else {
+                                        setCras([]);
+                                    }
+                                } catch (err) {
+                                    console.warn('[AppContext] fallback /cra/all failed', err);
+                                    setCras([]);
+                                }
+                            } else {
+                                setCras(dashboardCRAs);
+                            }
+
+                            // Derive consultant profiles from CRAs for manager view
+                            const source = (dashboardCRAs.length > 0) ? dashboardCRAs : [];
+                            const derivedProfilesMap = new Map();
+                            source.forEach((c) => {
+                                const p = c.profiles; // embedded profile of user_id
+                                if (p && p.id) {
+                                    derivedProfilesMap.set(p.id, {
+                                        id: p.id,
+                                        name: p.name,
+                                        email: p.email,
+                                        role: (p.role || 'consultant').toLowerCase(),
+                                        clients: p.clients || null,
+                                    });
+                                }
+                            });
+                            const derivedProfiles = Array.from(derivedProfilesMap.values());
+                            if (derivedProfiles.length > 0) {
+                                setProfiles(derivedProfiles);
+                            }
+                        } else {
+                            setCras([]);
+                        }
+                    } catch (e) {
+                        console.warn('[AppContext] /cra/dashboard failed', e);
+                        setCras([]);
                     }
                 } else {
                     // Consultant gets their own CRAs
                     const crasResponse = await apiClient.get(`/cra/user/${user.id}`);
+                    console.debug('[AppContext] /cra/user response', crasResponse.data);
                     if (crasResponse.data.success) {
                         setCras(crasResponse.data.data);
                     }
                 }
             } catch (error) {
+                console.error('[AppContext] fetch CRAs failed', error);
                 // Could not fetch CRAs
                 setCras([]);
             }
@@ -153,11 +222,12 @@ export const AppProvider = ({ children }) => {
             if (user.role === 'admin' || user.role === 'manager') {
                 try {
                     const logsResponse = await apiClient.get('/action-log/dashboard');
+                    console.debug('[AppContext] /action-log/dashboard response', logsResponse.data);
                     if (logsResponse.data.success) {
                         setActionLogs(logsResponse.data.data.logs || []);
                     }
                 } catch (error) {
-                    // Could not fetch action logs
+                    console.warn('[AppContext] /action-log/dashboard failed', error);
                 }
             } else {
                 setActionLogs([]);
@@ -196,50 +266,59 @@ export const AppProvider = ({ children }) => {
     }, [user]);
     
     const updateCRA = async (craId, updates) => {
+        console.debug('[AppContext] updateCRA', { craId, updates });
         try {
             const response = await apiClient.patch(`/cra/${craId}`, updates);
+            console.debug('[AppContext] updateCRA response', response.data);
             if (response.data.success) {
                 toast({ title: "CRA mis à jour." });
-                await logAction(updates.status ? `Changement statut CRA: ${updates.status}` : 'Modification CRA', { craId });
+                await logAction(updates.status ? `Changement statut CRA: ${updates.status}` : 'Modification CRA', { craId, updates });
                 // Refresh data
-                fetchData();
+                fetchData(true);
             }
         } catch (error) {
+            console.error('[AppContext] updateCRA failed', error);
             toast({ variant: 'destructive', title: 'Erreur', description: 'La mise à jour du CRA a échoué.' });
         }
     };
     
     const createCRA = async (userId, date, days) => {
         try {
+            const normalizedMonth = formatISO(startOfMonth(date), { representation: 'date' });
             const craData = {
                 user_id: userId,
-                month: date,
+                month: normalizedMonth,
                 status: 'Brouillon',
                 days: days || {}
             };
-            
+            console.debug('[AppContext] createCRA payload', craData);
             const response = await apiClient.post('/cra', craData);
+            console.debug('[AppContext] createCRA response', response.data);
             if (response.data.success) {
                 toast({ title: "Nouveau CRA créé." });
-                await logAction('Création CRA', { userId, date, days });
+                await logAction('Création CRA', { userId, month: normalizedMonth });
                 // Refresh data
-                fetchData();
+                fetchData(true);
             }
         } catch (error) {
+            console.error('[AppContext] createCRA failed', error);
             toast({ variant: 'destructive', title: 'Erreur', description: 'La création du CRA a échoué.' });
         }
     };
 
     const deleteCRA = async (craId) => {
+        console.debug('[AppContext] deleteCRA', { craId });
         try {
             const response = await apiClient.delete(`/cra/${craId}`);
+            console.debug('[AppContext] deleteCRA response', response.data);
             if (response.data.success) {
                 toast({ title: "CRA supprimé." });
                 await logAction('Suppression CRA', { craId });
                 // Refresh data
-                fetchData();
+                fetchData(true);
             }
         } catch (error) {
+            console.error('[AppContext] deleteCRA failed', error);
             toast({ variant: 'destructive', title: 'Erreur', description: 'La suppression du CRA a échoué.' });
         }
     };
@@ -255,7 +334,8 @@ export const AppProvider = ({ children }) => {
         updateCRA,
         createCRA,
         deleteCRA,
-    }), [clients, profiles, cras, actionLogs, loading, fetchData, logAction]);
+        profile: user,
+    }), [clients, profiles, cras, actionLogs, loading, fetchData, logAction, user]);
 
     return (
         <AppContext.Provider value={value}>

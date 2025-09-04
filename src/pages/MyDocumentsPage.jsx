@@ -42,11 +42,12 @@ const MyDocumentsPage = () => {
                 return acc;
             }, 0) : 0;
 
+        const userClient = clients.find(c => c.id === user.client_id);
         setPreviewCra({
             ...cra,
-            consultantName: user.fullname,
-            clientName: 'N/A', // Placeholder since we don't have client data yet
-            clientAddress: 'N/A',
+            consultantName: user.name || user.fullname,
+            clientName: userClient?.name || 'Non assigné',
+            clientAddress: userClient?.address || 'N/A',
             totalDays: totalDays,
         });
     }

@@ -98,6 +98,7 @@ const ManagementCRAPage = () => {
   const resetFilters = () => { setFilters({ searchTerm: '', consultant: 'Tous', client: 'Tous', status: 'Tous', dateRange: { from: startOfMonth(new Date()), to: endOfMonth(new Date()) } }); };
 
   const handleAction = async (cra, action, reason = '') => {
+    console.debug('[ManagementCRAPage] handleAction', { id: cra.id, currentStatus: cra.status, action, reason });
     let nextStatus = ''; let dataToUpdate = {};
 
     if (action === 'validate') { nextStatus = 'Validé'; } 
@@ -108,6 +109,7 @@ const ManagementCRAPage = () => {
       dataToUpdate.status = nextStatus;
       await updateCRA(cra.id, dataToUpdate);
     } else {
+      console.warn('[ManagementCRAPage] invalid action', action);
       toast({ title: "Action impossible", variant: "destructive" });
     }
   };
@@ -115,60 +117,89 @@ const ManagementCRAPage = () => {
   const handleDeleteCRA = (craId) => { deleteCRA(craId); }
 
   const allCRAsForDisplay = useMemo(() => {
+    console.debug('[ManagementCRAPage] build rows from CRAs', { crasCount: cras.length, filters });
+    // If we already have CRAs from the backend (with embedded profiles), build rows directly
+    if (cras && cras.length > 0) {
+      const rows = cras.map((c) => {
+        const monthDate = new Date(c.month);
+        const consultantName = c.profiles?.name || profiles.find(p => p.id === c.user_id)?.name || 'N/A';
+        const clientName = c.profiles?.clients?.name || clients.find(cl => cl.id === profiles.find(p => p.id === c.user_id)?.client_id)?.name || 'N/A';
+        const totalDays = c?.days ? Object.values(c.days).reduce((acc, day) => {
+          if (day.status === 'worked_1') return acc + 1;
+          if (day.status === 'worked_0_5') return acc + 0.5;
+          return acc;
+        }, 0) : 0;
+        return {
+          id: c.id,
+          consultantName,
+          clientName,
+          month: monthDate,
+          status: c.status,
+          totalDays,
+        };
+      });
+
+      const start = filters.dateRange.from || new Date('2000-01-01');
+      const end = filters.dateRange.to || new Date('2100-01-01');
+
+      const filtered = rows
+        .filter(r => r.month >= start && r.month <= end)
+        .filter(r => filters.consultant === 'Tous' || r.consultantName === filters.consultant)
+        .filter(r => filters.client === 'Tous' || r.clientName === filters.client)
+        .filter(r => filters.status === 'Tous' || r.status === filters.status)
+        .filter(r => !filters.searchTerm || ((r.consultantName || '').toLowerCase().includes(filters.searchTerm.toLowerCase())))
+        .sort((a, b) => (b.month - a.month) || ((a.consultantName || '').localeCompare(b.consultantName || '')));
+
+      console.debug('[ManagementCRAPage] rows after filter', { total: filtered.length });
+      return filtered;
+    }
+
+    // Fallback to original month-grid construction if no CRAs present
     const consultantsInPeriod = profiles.filter(p => p.role === 'consultant' || p.role === 'Consultant');
     let allCRAsForPeriod = [];
-    
     const start = filters.dateRange.from || new Date('2000-01-01');
     const end = filters.dateRange.to || new Date('2100-01-01');
 
     consultantsInPeriod.forEach(consultant => {
-        let month = new Date(start);
-        while(month <= end) {
-            const existingCRA = cras.find(c => 
-                c.user_id === consultant.id && 
-                getMonth(c.month) === getMonth(month) &&
-                getYear(c.month) === getYear(month)
-            );
+      let month = new Date(start);
+      while (month <= end) {
+        const existingCRA = cras.find(c =>
+          c.user_id === consultant.id &&
+          getMonth(c.month) === getMonth(month) &&
+          getYear(c.month) === getYear(month)
+        );
 
-            const craData = {
-                id: existingCRA ? existingCRA.id : `${consultant.id}-${format(month, 'yyyy-MM')}`,
-                ...existingCRA,
-                consultantName: consultant.name,
-                clientName: consultant.clients?.name,
-                month: month,
-                status: existingCRA ? existingCRA.status : 'Non créé',
-                totalDays: existingCRA?.days ? Object.values(existingCRA.days).reduce((acc, day) => {
-                    if (day.status === 'worked_1') return acc + 1;
-                    if (day.status === 'worked_0_5') return acc + 0.5;
-                    return acc;
-                }, 0) : 0,
-            };
-            allCRAsForPeriod.push(craData);
-            month = addMonths(month, 1);
-        }
+        const craData = {
+          id: existingCRA ? existingCRA.id : `${consultant.id}-${format(month, 'yyyy-MM')}`,
+          ...existingCRA,
+          consultantName: consultant.name,
+          clientName: clients.find(c => c.id === consultant.client_id)?.name || 'Non assigné',
+          month: month,
+          status: existingCRA ? existingCRA.status : 'Non créé',
+          totalDays: existingCRA?.days ? Object.values(existingCRA.days).reduce((acc, day) => {
+            if (day.status === 'worked_1') return acc + 1;
+            if (day.status === 'worked_0_5') return acc + 0.5;
+            return acc;
+          }, 0) : 0,
+        };
+        allCRAsForPeriod.push(craData);
+        month = addMonths(month, 1);
+      }
     });
 
-  //   return allCRAsForPeriod.filter(cra => {
-  //       if (filters.consultant !== 'Tous' && cra.consultantName !== filters.consultant) return false;
-  //       if (filters.client !== 'Tous' && cra.clientName !== filters.client) return false;
-  //       if (filters.status !== 'Tous' && cra.status !== filters.status) return false;
-  //       if (filters.searchTerm && !(cra.consultantName && cra.consultantName.toLowerCase().includes(filters.searchTerm.toLowerCase()))) return false;
-  //       return true;
-  //   }).sort((a, b) => b.month - a.month || a.consultantName.localeCompare(b.consultantName));
-  // }, [cras, profiles, filters]);
+    const filtered = allCRAsForPeriod
+      .filter(cra => {
+        if (filters.consultant !== 'Tous' && cra.consultantName !== filters.consultant) return false;
+        if (filters.client !== 'Tous' && cra.clientName !== filters.client) return false;
+        if (filters.status !== 'Tous' && cra.status !== filters.status) return false;
+        if (filters.searchTerm && !(cra.consultantName && cra.consultantName.toLowerCase().includes(filters.searchTerm.toLowerCase()))) return false;
+        return true;
+      })
+      .sort((a, b) => b.month - a.month || ((a.consultantName || '').localeCompare(b.consultantName || '')));
 
-  return allCRAsForPeriod
-    .filter(cra => {
-      if (filters.consultant !== 'Tous' && cra.consultantName !== filters.consultant) return false;
-      if (filters.client !== 'Tous' && cra.clientName !== filters.client) return false;
-      if (filters.status !== 'Tous' && cra.status !== filters.status) return false;
-      if (filters.searchTerm && !(cra.consultantName && cra.consultantName.toLowerCase().includes(filters.searchTerm.toLowerCase()))) return false;
-      return true;
-    })
-    .sort((a, b) => 
-      b.month - a.month || 
-      ((a.consultantName || '').localeCompare(b.consultantName || ''))
-    )}, [cras, profiles, filters]);
+    console.debug('[ManagementCRAPage] fallback rows after filter', { total: filtered.length });
+    return filtered;
+  }, [cras, profiles, clients, filters]);
 
 
   return (
@@ -212,9 +243,30 @@ const ManagementCRAPage = () => {
                     <TableCell className="font-medium">{cra.consultantName || 'N/A'}</TableCell><TableCell>{cra.clientName || 'N/A'}</TableCell><TableCell>{getYear(cra.month)}</TableCell><TableCell className="capitalize">{format(cra.month, 'MMMM', {locale: fr})}</TableCell><TableCell>{cra.totalDays.toFixed(1)}</TableCell><TableCell><StatusBadge status={cra.status} /></TableCell>
                     <TableCell className="text-right space-x-2">
                        <Button variant="outline" size="sm" onClick={() => setPreviewCra(cra)} disabled={cra.status === 'Non créé'}><Eye className="w-4 h-4" /></Button>
-                       {(profile?.role === 'admin' || profile?.role === 'Admin') && cra.status !== 'Non créé' && <AlertDialog><AlertDialogTrigger asChild><Button variant="destructive" size="sm"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Supprimer ce CRA ?</AlertDialogTitle><AlertDialogDescription>Cette action est irréversible. Le CRA sera définitivement supprimé.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Annuler</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteCRA(cra.id)}>Supprimer</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>}
-                       {(['manager', 'admin', 'Manager', 'Admin'].includes(profile?.role)) && cra.status === 'Soumis' && (<><Button size="sm" onClick={() => handleAction(cra, 'validate')}>Valider</Button><ReviseDialog cra={cra} onConfirm={(reason) => handleAction(cra, 'revise', reason)} /></>)}
-                       {(['manager', 'admin', 'Manager', 'Admin'].includes(profile?.role)) && cra.status === 'Validé' && (<Button size="sm" onClick={() => handleAction(cra, 'request_signature')}>Demander signature</Button>)}
+                       {(String(profile?.role).toLowerCase() === 'admin') && cra.status !== 'Non créé' && (
+                         <AlertDialog>
+                           <AlertDialogTrigger asChild><Button variant="destructive" size="sm"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
+                           <AlertDialogContent>
+                             <AlertDialogHeader>
+                               <AlertDialogTitle>Supprimer ce CRA ?</AlertDialogTitle>
+                               <AlertDialogDescription>Cette action est irréversible. Le CRA sera définitivement supprimé.</AlertDialogDescription>
+                             </AlertDialogHeader>
+                             <AlertDialogFooter>
+                               <AlertDialogCancel>Annuler</AlertDialogCancel>
+                               <AlertDialogAction onClick={() => handleDeleteCRA(cra.id)}>Supprimer</AlertDialogAction>
+                             </AlertDialogFooter>
+                           </AlertDialogContent>
+                         </AlertDialog>
+                       )}
+                       {(['manager','admin'].includes(String(profile?.role).toLowerCase())) && cra.status === 'Soumis' && (
+                         <>
+                           <Button size="sm" onClick={() => handleAction(cra, 'validate')}>Valider</Button>
+                           <ReviseDialog cra={cra} onConfirm={(reason) => handleAction(cra, 'revise', reason)} />
+                         </>
+                       )}
+                       {(['manager','admin'].includes(String(profile?.role).toLowerCase())) && cra.status === 'Validé' && (
+                         <Button size="sm" onClick={() => handleAction(cra, 'request_signature')}>Demander signature</Button>
+                       )}
                     </TableCell>
                   </TableRow>
                 ))

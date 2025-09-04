@@ -81,7 +81,7 @@ const AccountsPage = () => {
                 await apiClient.post('/user/create', payload);
                 toast({ title: "Compte créé. Une invitation a été envoyée par email." });
             }
-            fetchData();
+            fetchData(true);
         } catch (error) {
             toast({ 
                 variant: "destructive", 
@@ -105,7 +105,7 @@ const AccountsPage = () => {
                 await apiClient.post('/client', currentClient);
                 toast({ title: "Client créé avec succès." });
             }
-            fetchData();
+            fetchData(true);
             setNewClientName("");
         } catch (error) {
             toast({ 
@@ -123,7 +123,7 @@ const AccountsPage = () => {
         try {
             await apiClient.delete(`/user/${userId}`);
             toast({ title: "Utilisateur supprimé avec succès." });
-            fetchData();
+            fetchData(true);
         } catch (error) {
             toast({ 
                 variant: "destructive", 

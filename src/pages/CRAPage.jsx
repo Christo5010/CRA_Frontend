@@ -51,11 +51,14 @@ const CRAPage = () => {
   const [isPreviewOpen, setPreviewOpen] = useState(false);
 
   const getCRAForMonth = (userId, date) => {
-    return cras.find(cra => 
-        cra.user_id === userId &&
-        getYear(cra.month) === getYear(date) &&
-        format(cra.month, 'M') === format(date, 'M')
-    );
+    const found = cras.find(cra => {
+      // Handle both string and Date formats for cra.month
+      const craMonthDate = typeof cra.month === 'string' ? new Date(cra.month) : cra.month;
+      return cra.user_id === userId &&
+        getYear(craMonthDate) === getYear(date) &&
+        format(craMonthDate, 'M') === format(date, 'M');
+    });
+    return found;
   };
 
   const craData = useMemo(() => {
@@ -93,8 +96,16 @@ const CRAPage = () => {
     }, 0);
   }, [craData]);
 
-  const isLockedForConsultant = useMemo(() => !craData || !['Brouillon', 'À réviser'].includes(craData.status), [craData]);
-  const isCompletelyLocked = useMemo(() => !craData || craData.status === 'Signé', [craData]);
+  const isLockedForConsultant = useMemo(() => {
+    // If no CRA exists yet, allow editing to create one
+    if (!craData) return false;
+    return !['Brouillon', 'À réviser'].includes(craData.status);
+  }, [craData]);
+  const isCompletelyLocked = useMemo(() => {
+    // If no CRA exists yet, it's not locked
+    if (!craData) return false;
+    return craData.status === 'Signé';
+  }, [craData]);
 
   const handleDayUpdate = async (day, status) => {
     const dayKey = format(day, 'yyyy-MM-dd');
@@ -182,15 +193,16 @@ const CRAPage = () => {
   
   const craForPreview = useMemo(() => {
     if (!craData || !user) return null;
+    const userClient = clients.find(c => c.id === user.client_id);
     return {
       ...craData,
-      consultantName: user.fullname,
-      clientName: 'N/A', // Placeholder since we don't have client data yet
-      clientAddress: 'N/A',
+      consultantName: user.name || user.fullname,
+      clientName: userClient?.name || 'Non assigné',
+      clientAddress: userClient?.address || 'N/A',
       month: craData.month,
       totalDays: totalDaysFilled,
     };
-  }, [craData, user, totalDaysFilled]);
+  }, [craData, user, totalDaysFilled, clients]);
 
   if (loading) {
     return <div className="flex h-full items-center justify-center">Chargement du CRA...</div>;
@@ -202,8 +214,8 @@ const CRAPage = () => {
       
       <Card className="p-6 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div><p className="text-sm font-medium text-gray-500">Consultant</p><p className="font-semibold">{user?.fullname}</p></div>
-          <div><p className="text-sm font-medium text-gray-500">Client</p><p className="font-semibold">Non assigné</p></div>
+          <div><p className="text-sm font-medium text-gray-500">Consultant</p><p className="font-semibold">{user?.name || user?.fullname}</p></div>
+          <div><p className="text-sm font-medium text-gray-500">Client</p><p className="font-semibold">{clients.find(c => c.id === user?.client_id)?.name || 'Non assigné'}</p></div>
           <div><p className="text-sm font-medium text-gray-500">Année</p><p className="font-semibold">{format(currentMonth, 'yyyy')}</p></div>
           <div><p className="text-sm font-medium text-gray-500">Mois</p><p className="font-semibold capitalize">{format(currentMonth, 'MMMM', { locale: fr })}</p></div>
         </div>
@@ -247,14 +259,14 @@ const CRAPage = () => {
           </div>
           <div className="flex items-center space-x-2">
             {(isLockedForConsultant || isCompletelyLocked) && craData && <Lock className="h-5 w-5 text-gray-400" title="Ce CRA est verrouillé" />}
-             {user?.role === 'Consultant' && !isLockedForConsultant && (
+             {user?.role?.toLowerCase() === 'consultant' && !isLockedForConsultant && (
                 <>
                     <Button variant="outline" onClick={handleFillWorkingDays}><Edit className="w-4 h-4 mr-2" />Remplir ouvrés</Button>
                     <Button variant="outline" onClick={handleClearAll} disabled={!craData}><Trash2 className="w-4 h-4 mr-2" />Effacer tout</Button>
                     <Button onClick={handleSubmit} disabled={!craData}><Send className="w-4 h-4 mr-2" />Soumettre</Button>
                 </>
              )}
-            {user?.role === 'Consultant' && craData?.status === 'Signature demandée' && (
+            {user?.role?.toLowerCase() === 'consultant' && craData?.status === 'Signature demandée' && (
               <Button onClick={handleSign} className="bg-green-500 hover:bg-green-600"><PenSquare className="w-4 h-4 mr-2" />Signer mon CRA</Button>
             )}
             <Button variant="outline" onClick={() => setPreviewOpen(true)} disabled={!craData}><Eye className="w-4 h-4 mr-2" />Aperçu</Button>
