@@ -13,6 +13,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { getHolidays } from '@/lib/holidays';
 import CRAPreview from '@/components/cra/CRAPreview';
+import SignatureCanvas from 'react-signature-canvas';
 
 const StatusBadge = ({ status }) => {
   const baseClasses = "px-3 py-1 text-sm font-semibold rounded-full inline-block";
@@ -49,6 +50,9 @@ const CRAPage = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [holidayConfirmation, setHolidayConfirmation] = useState({ isOpen: false, day: null });
   const [isPreviewOpen, setPreviewOpen] = useState(false);
+  const [isSignDialogOpen, setIsSignDialogOpen] = useState(false);
+  const [sigRef, setSigRef] = useState(null);
+  const [sigEmpty, setSigEmpty] = useState(true);
 
   const getCRAForMonth = (userId, date) => {
     const found = cras.find(cra => {
@@ -182,8 +186,16 @@ const CRAPage = () => {
   }
 
   const handleSign = async () => {
-    if(!craData) return;
-    await updateCRA(craData.id, { status: 'Signé' });
+    // open dialog instead of directly signing
+    setIsSignDialogOpen(true);
+  }
+
+  const confirmSign = async () => {
+    if (!sigRef || sigRef.isEmpty() || !craData) return;
+    // Use toDataURL directly to avoid trim-canvas dependency issues
+    const dataUrl = sigRef.toDataURL('image/png');
+    await updateCRA(craData.id, { status: 'Signé', signature_dataurl: dataUrl });
+    setIsSignDialogOpen(false);
   }
 
   const handleCommentChange = async (comment) => {
@@ -201,6 +213,7 @@ const CRAPage = () => {
       clientAddress: userClient?.address || 'N/A',
       month: craData.month,
       totalDays: totalDaysFilled,
+      signature_url: craData.signature_url || null,
     };
   }, [craData, user, totalDaysFilled, clients]);
 
@@ -332,6 +345,34 @@ const CRAPage = () => {
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setHolidayConfirmation({ isOpen: false, day: null })}>Annuler</AlertDialogCancel>
             <AlertDialogAction onClick={confirmHolidayWork}>Confirmer</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Signature Dialog */}
+      <AlertDialog open={isSignDialogOpen} onOpenChange={setIsSignDialogOpen}>
+        <AlertDialogContent className="max-w-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Signer mon CRA</AlertDialogTitle>
+            <AlertDialogDescription>
+              Dessinez votre signature ci-dessous (souris ou tactile), puis cliquez sur "Signer".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="p-2">
+            <div className="border rounded-md bg-white">
+              <SignatureCanvas
+                ref={(ref) => setSigRef(ref)}
+                canvasProps={{ width: 600, height: 220, className: 'signature-canvas' }}
+                onEnd={() => setSigEmpty(false)}
+              />
+            </div>
+            <div className="mt-2 flex gap-2">
+              <Button type="button" variant="outline" onClick={() => { if (sigRef) { sigRef.clear(); setSigEmpty(true); } }}>Effacer</Button>
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setIsSignDialogOpen(false)}>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmSign} disabled={sigEmpty}>Signer</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

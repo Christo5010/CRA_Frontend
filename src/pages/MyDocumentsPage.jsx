@@ -75,10 +75,12 @@ const MyDocumentsPage = () => {
                                 if (day.status === 'worked_0_5') return acc + 0.5;
                                 return acc;
                             }, 0) : 0;
+                            const monthDate = (typeof cra.month === 'string') ? new Date(cra.month) : cra.month;
+                            const safeMonth = monthDate instanceof Date && !isNaN(monthDate) ? monthDate : new Date();
                             return (
                                 <TableRow key={cra.id}>
-                                    <TableCell>{format(cra.month, 'yyyy')}</TableCell>
-                                    <TableCell className="capitalize">{format(cra.month, 'MMMM', {locale: fr})}</TableCell>
+                                    <TableCell>{format(safeMonth, 'yyyy')}</TableCell>
+                                    <TableCell className="capitalize">{format(safeMonth, 'MMMM', {locale: fr})}</TableCell>
                                     <TableCell>{totalDays.toFixed(1)}</TableCell>
                                     <TableCell><StatusBadge status={cra.status} /></TableCell>
                                     <TableCell className="text-right">

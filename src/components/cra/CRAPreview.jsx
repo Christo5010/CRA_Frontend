@@ -5,36 +5,51 @@ import html2canvas from 'html2canvas';
 import { Button } from '@/components/ui/button';
 import { Download, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import { format, getYear } from 'date-fns';
+import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { getHolidays } from '@/lib/holidays';
 
-const CRAPreview = ({ isOpen, onOpenChange, cra }) => {
+const CRAPreview = ({ isOpen, onOpenChange, cra, onPdfGenerated }) => {
   const previewRef = useRef();
 
   if (!cra) return null;
 
-  const { consultant, client, clientAddress, monthName, year, days, comment, totalDays } = cra;
+  const consultant = cra.consultant || cra.consultantName || '';
+  const client = cra.client || cra.clientName || '';
+  const clientAddress = cra.clientAddress || '';
+  const days = cra.days || {};
+  const comment = cra.comment || '';
+  const totalDays = cra.totalDays || 0;
+  const signatureDataUrl = cra.signatureDataUrl;
+  const signature_url = cra.signature_url;
+  const month = cra.monthName || (cra.month ? format(new Date(cra.month), 'LLLL', { locale: fr }) : '');
+  const year = cra.year || (cra.month ? format(new Date(cra.month), 'yyyy') : '');
 
   const handleDownload = () => {
     if (!previewRef.current) return;
-    html2canvas(previewRef.current, { scale: 2 }).then((canvas) => {
+    html2canvas(previewRef.current, { scale: 2, useCORS: true, allowTaint: false }).then((canvas) => {
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`CRA-${consultant}-${monthName}-${year}.pdf`);
+      const fileName = `CRA-${consultant}-${month}-${year}.pdf`;
+      pdf.save(fileName);
+      try {
+        if (onPdfGenerated) {
+          const blob = pdf.output('blob');
+          onPdfGenerated(blob, fileName);
+        }
+      } catch {}
     });
   };
 
-  const holidays = getHolidays(year);
+  const holidays = getHolidays(parseInt(year || '0', 10) || new Date().getFullYear());
   const calendarDays = Object.keys(days).sort();
   
   const totalWorked1 = Object.values(days).filter(d => d.status === 'worked_1').length;
   const totalWorked05 = Object.values(days).filter(d => d.status === 'worked_0_5').length;
   const totalOff = Object.values(days).filter(d => d.status === 'off').length;
-
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -56,7 +71,7 @@ const CRAPreview = ({ isOpen, onOpenChange, cra }) => {
                 </header>
 
                 <section className="my-8">
-                    <h2 className="text-xl font-semibold text-center uppercase mb-4 text-gray-800">Feuille de temps - {monthName} {year}</h2>
+                    <h2 className="text-xl font-semibold text-center uppercase mb-4 text-gray-800">Feuille de temps - {month} {year}</h2>
                     <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
                         <div className="flex justify-between"><span className="font-semibold">Consultant :</span><span>{consultant}</span></div>
                         <div className="flex justify-between"><span className="font-semibold">Client :</span><span>{client || 'N/A'}</span></div>
@@ -117,11 +132,15 @@ const CRAPreview = ({ isOpen, onOpenChange, cra }) => {
                 <footer className="pt-8 text-xs text-gray-500">
                     <div className="grid grid-cols-2 gap-8">
                         <div>
-                            <p className="font-semibold mb-8">Signature Consultant</p>
-                            <p>{consultant}</p>
+                            <p className="font-semibold mb-2">Signature Consultant</p>
+                            {(signatureDataUrl || signature_url) ? (
+                              <img crossOrigin="anonymous" src={signatureDataUrl || signature_url} alt="Signature Consultant" style={{ width: 220, height: 80, objectFit: 'contain' }} />
+                            ) : (
+                              <p>{consultant}</p>
+                            )}
                         </div>
                         <div>
-                            <p className="font-semibold mb-8">Signature Client</p>
+                            <p className="font-semibold mb-2">Signature Client</p>
                             <p>Cachet et signature</p>
                         </div>
                     </div>
