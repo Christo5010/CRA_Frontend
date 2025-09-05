@@ -22,6 +22,7 @@ const CRAPreview = ({ isOpen, onOpenChange, cra, onPdfGenerated }) => {
   const totalDays = cra.totalDays || 0;
   const signatureDataUrl = cra.signatureDataUrl;
   const signature_url = cra.signature_url;
+  const signature_text = cra.signature_text || '';
   const month = cra.monthName || (cra.month ? format(new Date(cra.month), 'LLLL', { locale: fr }) : '');
   const year = cra.year || (cra.month ? format(new Date(cra.month), 'yyyy') : '');
 
@@ -32,6 +33,7 @@ const CRAPreview = ({ isOpen, onOpenChange, cra, onPdfGenerated }) => {
     <html>
       <head>
         <title>CRA - ${consultant} (${month} ${year})</title>
+        <link href="https://fonts.googleapis.com/css2?family=Style+Script&display=swap" rel="stylesheet">
         <style>
           @media print {
             body {
@@ -183,6 +185,12 @@ const CRAPreview = ({ isOpen, onOpenChange, cra, onPdfGenerated }) => {
               padding-top: 20px;
               border-top: 1px dashed #ccc; /* Dashed line for signature area */
             }
+            .signature-text {
+              font-family: 'Style Script', cursive;
+              font-size: 28px;
+              color: #222;
+            }
+
             .signature-block p {
                 margin: 5px 0;
                 color: #777;
@@ -265,13 +273,17 @@ const CRAPreview = ({ isOpen, onOpenChange, cra, onPdfGenerated }) => {
         <div class="signatures">
           <div class="signature-block">
             <p><strong>Signature Consultant</strong></p>
-            ${(signatureDataUrl || signature_url) 
-              ? `<img id="consultantSig" src="${signatureDataUrl || signature_url}" alt="Signature Consultant" />`
-              : `<p>${consultant}</p>`}
+            ${
+                signature_text
+                  ? `<div style="font-family: 'Style Script', cursive;" class="signature-text">${signature_text}</div>`
+                  : (signatureDataUrl || signature_url
+                      ? `<img src="${signatureDataUrl || signature_url}" alt="Signature Consultant" />`
+                      : `<p>${consultant}</p>`)
+              }
           </div>
           <div class="signature-block">
             <p><strong>Signature Client</strong></p>
-            <p>Cachet et signature</p>
+            <div class="signature-text">${client}</div>
           </div>
         </div>
 
@@ -401,15 +413,22 @@ const CRAPreview = ({ isOpen, onOpenChange, cra, onPdfGenerated }) => {
                     <div className="grid grid-cols-2 gap-8">
                         <div>
                             <p className="font-semibold mb-2">Signature Consultant</p>
-                            {(signatureDataUrl || signature_url) ? (
-                              <img crossOrigin="anonymous" src={signatureDataUrl || signature_url} alt="Signature Consultant" style={{ width: 220, height: 80, objectFit: 'contain' }} />
+                            {signature_text ? (
+                              <div className="text-2xl font-[] text-black signature-text">{signature_text}</div>
+                            ) : (signatureDataUrl || signature_url) ? (
+                              <img
+                                crossOrigin="anonymous"
+                                src={signatureDataUrl || signature_url}
+                                alt="Signature Consultant"
+                                style={{ width: 220, height: 80, objectFit: 'contain' }}
+                              />
                             ) : (
                               <p>{consultant}</p>
                             )}
                         </div>
                         <div>
                             <p className="font-semibold mb-2">Signature Client</p>
-                            <p>Cachet et signature</p>
+                            <div className="text-2xl font-[Style Script] text-black signature-text">{client}</div>
                         </div>
                     </div>
                 </footer>

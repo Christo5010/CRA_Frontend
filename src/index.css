@@ -60,6 +60,11 @@
   }
 }
 
+.signature-text {
+  font-family: 'Style Script', cursive;
+}
+
+
 .day-cell {
   @apply relative h-20 w-full cursor-pointer p-1 text-right text-sm text-gray-500 transition-colors duration-200;
 }

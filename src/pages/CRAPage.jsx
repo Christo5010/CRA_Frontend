@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, {useEffect, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, Lock, Trash2, Send, Edit, Eye, PenSquare, AlertTriangle } from 'lucide-react';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isToday, isWeekend, getYear } from 'date-fns';
@@ -198,6 +198,11 @@ const CRAPage = () => {
     setIsSignDialogOpen(false);
   }
 
+  const [signatureText, setSignatureText] = useState(craData?.signature_text || "");
+  useEffect(() => {
+    setSignatureText(craData?.signature_text || "");
+  }, [craData]);
+
   const handleCommentChange = async (comment) => {
     if (isLockedForConsultant || !craData) return;
     await updateCRA(craData.id, { comment });
@@ -350,7 +355,7 @@ const CRAPage = () => {
       </AlertDialog>
 
       {/* Signature Dialog */}
-      <AlertDialog open={isSignDialogOpen} onOpenChange={setIsSignDialogOpen}>
+      {/* <AlertDialog open={isSignDialogOpen} onOpenChange={setIsSignDialogOpen}>
         <AlertDialogContent className="max-w-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle>Signer mon CRA</AlertDialogTitle>
@@ -375,7 +380,54 @@ const CRAPage = () => {
             <AlertDialogAction onClick={confirmSign} disabled={sigEmpty}>Signer</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
+      </AlertDialog> */}
+
+      <AlertDialog open={isSignDialogOpen} onOpenChange={setIsSignDialogOpen}>
+        <AlertDialogContent className="max-w-lg">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Signer mon CRA</AlertDialogTitle>
+            <AlertDialogDescription>
+              Entrez votre signature (texte). Elle sera affichée avec une police manuscrite.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="p-2">
+            <input
+              type="text"
+              className="w-full border rounded-md px-3 py-2 font-[cursive]"
+              placeholder="Tapez votre signature ici..."
+              value={signatureText}
+              onChange={(e) => setSignatureText(e.target.value)}
+              onBlur={() => {
+                if (signatureText !== craData?.signature_text) {
+                  updateCRA(craData.id, { signature_text: signatureText })
+                }
+              }}
+            />
+            <p className="mt-2 text-sm text-gray-500">
+              Exemple de rendu manuscrit :
+              <span className="ml-2 font-[cursive] text-xl">{signatureText}</span>
+            </p>
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setIsSignDialogOpen(false)}>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (signatureText) {
+                  updateCRA(craData.id, { status: "Signé", signature_text: signatureText })
+                  setIsSignDialogOpen(false)
+                }
+              }}
+              disabled={!signatureText}
+            >
+              Signer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
       </AlertDialog>
+
+
 
     </motion.div>
   );
