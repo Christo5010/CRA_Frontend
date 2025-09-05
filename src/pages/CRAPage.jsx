@@ -52,11 +52,11 @@ const CRAPage = () => {
   const [isPreviewOpen, setPreviewOpen] = useState(false);
   const [isSignDialogOpen, setIsSignDialogOpen] = useState(false);
   const [sigRef, setSigRef] = useState(null);
+  const [comment, setComment] = useState("");
   const [sigEmpty, setSigEmpty] = useState(true);
 
   const getCRAForMonth = (userId, date) => {
     const found = cras.find(cra => {
-      // Handle both string and Date formats for cra.month
       const craMonthDate = typeof cra.month === 'string' ? new Date(cra.month) : cra.month;
       return cra.user_id === userId &&
         getYear(craMonthDate) === getYear(date) &&
@@ -101,12 +101,10 @@ const CRAPage = () => {
   }, [craData]);
 
   const isLockedForConsultant = useMemo(() => {
-    // If no CRA exists yet, allow editing to create one
     if (!craData) return false;
     return !['Brouillon', 'À réviser'].includes(craData.status);
   }, [craData]);
   const isCompletelyLocked = useMemo(() => {
-    // If no CRA exists yet, it's not locked
     if (!craData) return false;
     return craData.status === 'Signé';
   }, [craData]);
@@ -186,13 +184,15 @@ const CRAPage = () => {
   }
 
   const handleSign = async () => {
-    // open dialog instead of directly signing
     setIsSignDialogOpen(true);
   }
 
+  useEffect(() => {
+    setComment(craData?.comment || "");
+  }, [craData]);
+
   const confirmSign = async () => {
     if (!sigRef || sigRef.isEmpty() || !craData) return;
-    // Use toDataURL directly to avoid trim-canvas dependency issues
     const dataUrl = sigRef.toDataURL('image/png');
     await updateCRA(craData.id, { status: 'Signé', signature_dataurl: dataUrl });
     setIsSignDialogOpen(false);
@@ -327,11 +327,27 @@ const CRAPage = () => {
 
         <div className="mt-6">
           <label htmlFor="comment" className="text-sm font-medium text-gray-700 mb-2 block">Commentaire</label>
-          <Textarea
+          {/* <Textarea
             id="comment"
             placeholder={isLockedForConsultant && craData ? "Le CRA est verrouillé." : "Notes mensuelles..."}
             value={craData?.comment || ''}
             onChange={(e) => handleCommentChange(e.target.value)}
+            disabled={isLockedForConsultant || !craData}
+          /> */}
+          <Textarea
+            id="comment"
+            placeholder={
+              isLockedForConsultant && craData
+                ? "Le CRA est verrouillé."
+                : "Notes mensuelles..."
+            }
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            onBlur={async () => {
+              if (comment !== craData?.comment) {
+                await updateCRA(craData.id, { comment });
+              }
+            }}
             disabled={isLockedForConsultant || !craData}
           />
         </div>
