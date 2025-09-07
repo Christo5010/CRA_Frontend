@@ -9,10 +9,13 @@ import { toast } from '@/components/ui/use-toast';
 import { User, Lock } from 'lucide-react';
 
 const AccountSettingsPage = () => {
-  const { user, updateProfile, changePassword } = useAuth();
+  const { user, updateProfile, changePassword, requestEmailChange, verifyEmailChange } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [emailStep, setEmailStep] = useState('edit'); // 'edit' | 'verify'
+  const [pendingEmail, setPendingEmail] = useState('');
+  const [emailCode, setEmailCode] = useState('');
   
   // Profile form state
   const [profileForm, setProfileForm] = useState({
@@ -44,7 +47,21 @@ const AccountSettingsPage = () => {
   const handleProfileSave = async () => {
     setLoading(true);
     try {
-      const result = await updateProfile(profileForm);
+      // If email changed, trigger verification flow
+      if (profileForm.email && profileForm.email !== user?.email) {
+        const resp = await requestEmailChange(profileForm.email);
+        if (resp.success) {
+          setPendingEmail(profileForm.email);
+          setEmailStep('verify');
+          toast({ title: 'Code envoyé', description: 'Saisissez le code reçu par email.' });
+        } else {
+          toast({ variant: 'destructive', title: 'Erreur', description: resp.error || "Impossible d'envoyer le code" });
+        }
+        setLoading(false);
+        return;
+      }
+
+      const result = await updateProfile({ name: profileForm.name });
       if (result.success) {
         toast({ title: "Profil mis à jour avec succès." });
         setIsEditing(false);
@@ -63,6 +80,25 @@ const AccountSettingsPage = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleVerifyEmail = async () => {
+    if (!emailCode) {
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Entrez le code de vérification.' });
+      return;
+    }
+    setLoading(true);
+    const result = await verifyEmailChange(emailCode);
+    setLoading(false);
+    if (result.success) {
+      toast({ title: 'Email mis à jour' });
+      setIsEditing(false);
+      setEmailStep('edit');
+      setEmailCode('');
+      setPendingEmail('');
+    } else {
+      toast({ variant: 'destructive', title: 'Erreur', description: result.error || 'Code invalide' });
     }
   };
 
@@ -155,29 +191,47 @@ const AccountSettingsPage = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nom complet</Label>
-              <Input
-                id="name"
-                value={profileForm.name}
-                onChange={(e) => handleProfileChange('name', e.target.value)}
-                disabled={!isEditing}
-                placeholder="Votre nom complet"
-              />
+          {emailStep === 'edit' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Nom complet</Label>
+                <Input
+                  id="name"
+                  value={profileForm.name}
+                  onChange={(e) => handleProfileChange('name', e.target.value)}
+                  disabled={!isEditing}
+                  placeholder="Votre nom complet"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={profileForm.email}
+                  onChange={(e) => handleProfileChange('email', e.target.value)}
+                  disabled={!isEditing}
+                  placeholder="votre@email.com"
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={profileForm.email}
-                onChange={(e) => handleProfileChange('email', e.target.value)}
-                disabled={!isEditing}
-                placeholder="votre@email.com"
-              />
+          )}
+
+          {emailStep === 'verify' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="email-code">Code de vérification pour {pendingEmail}</Label>
+                <Input
+                  id="email-code"
+                  value={emailCode}
+                  onChange={(e) => setEmailCode(e.target.value)}
+                  disabled={!isEditing}
+                  placeholder="Entrez le code reçu par email"
+                />
+                <div className="text-sm text-gray-500">Un code vous a été envoyé. Entrez-le pour confirmer le changement d'email.</div>
+              </div>
             </div>
-          </div>
+          )}
           
 
           <div className="flex justify-end space-x-2 pt-4">
@@ -190,9 +244,15 @@ const AccountSettingsPage = () => {
                 <Button variant="outline" onClick={handleCancel}>
                   Annuler
                 </Button>
-                <Button onClick={handleProfileSave} disabled={loading}>
-                  {loading ? 'Sauvegarde...' : 'Sauvegarder'}
-                </Button>
+                {emailStep === 'verify' ? (
+                  <Button onClick={handleVerifyEmail} disabled={loading}>
+                    {loading ? 'Vérification...' : 'Vérifier et sauvegarder'}
+                  </Button>
+                ) : (
+                  <Button onClick={handleProfileSave} disabled={loading}>
+                    {loading ? 'Sauvegarde...' : 'Sauvegarder'}
+                  </Button>
+                )}
               </>
             )}
           </div>

@@ -54,6 +54,8 @@ export const AuthProvider = ({ children }) => {
         const refreshToken = response.data.data?.refreshToken;
         setTokens({ accessToken, refreshToken });
         setUser(userData);
+        // Notify other contexts to load immediately
+        window.dispatchEvent(new Event('auth:signedIn'));
         return { success: true, data: userData };
       } else {
         return { success: false, error: response.data.message };
@@ -79,9 +81,15 @@ export const AuthProvider = ({ children }) => {
 
   const updateProfile = useCallback(async (profileData) => {
     try {
+      if (profileData.email !== undefined) {
+        // Use email verification flow instead of direct update
+        return { success: false, error: "La mise à jour de l'email nécessite une vérification." };
+      }
       const response = await apiClient.patch('/user/update-account', profileData);
       if (response.data.success) {
-        setUser(prev => ({ ...prev, ...response.data.data }));
+        const updated = response.data.data || {};
+        const normalized = updated.role ? { ...updated, role: updated.role.toLowerCase() } : updated;
+        setUser(prev => ({ ...prev, ...normalized }));
         return { success: true, data: response.data.data };
       } else {
         return { success: false, error: response.data.message };
@@ -91,6 +99,33 @@ export const AuthProvider = ({ children }) => {
         success: false, 
         error: error.response?.data?.message || 'Échec de la mise à jour du profil' 
       };
+    }
+  }, []);
+
+  const requestEmailChange = useCallback(async (newEmail) => {
+    try {
+      const response = await apiClient.post('/user/request-email-change', { newEmail });
+      if (response.data.success) {
+        return { success: true, message: response.data.message };
+      }
+      return { success: false, error: response.data.message };
+    } catch (error) {
+      return { success: false, error: error.response?.data?.message || "Échec de l'envoi du code" };
+    }
+  }, []);
+
+  const verifyEmailChange = useCallback(async (code) => {
+    try {
+      const response = await apiClient.post('/user/verify-email-change', { code });
+      if (response.data.success) {
+        const updated = response.data.data || {};
+        const normalized = updated.role ? { ...updated, role: updated.role.toLowerCase() } : updated;
+        setUser(prev => ({ ...prev, ...normalized }));
+        return { success: true, data: response.data.data };
+      }
+      return { success: false, error: response.data.message };
+    } catch (error) {
+      return { success: false, error: error.response?.data?.message || 'Code invalide' };
     }
   }, []);
 
@@ -223,6 +258,8 @@ export const AuthProvider = ({ children }) => {
       signIn,
       signOut,
       updateProfile,
+      requestEmailChange,
+      verifyEmailChange,
       changePassword,
       forgotPassword,
       resetPassword,
@@ -231,7 +268,7 @@ export const AuthProvider = ({ children }) => {
       resetPasswordWithToken,
       checkAuthStatus
     };
-  }, [user, loading, signIn, signOut, updateProfile, changePassword, forgotPassword, resetPassword, resetPasswordWithToken, checkAuthStatus]);
+  }, [user, loading, signIn, signOut, updateProfile, requestEmailChange, verifyEmailChange, changePassword, forgotPassword, resetPassword, resetPasswordWithToken, checkAuthStatus]);
 
   return (
     <AuthContext.Provider value={value}>

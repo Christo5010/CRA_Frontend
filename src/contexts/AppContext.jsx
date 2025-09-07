@@ -245,6 +245,13 @@ export const AppProvider = ({ children }) => {
         }
     }, [authLoading, isAuthenticated, fetchData]);
 
+    // Ensure data loads immediately after a fresh sign-in
+    useEffect(() => {
+        const onSignedIn = () => fetchData(true);
+        window.addEventListener('auth:signedIn', onSignedIn);
+        return () => window.removeEventListener('auth:signedIn', onSignedIn);
+    }, [fetchData]);
+
     const logAction = useCallback(async (action, details = {}) => {
         if (!user) return;
         try {
@@ -260,16 +267,24 @@ export const AppProvider = ({ children }) => {
     
     const updateCRA = async (craId, updates) => {
         console.debug('[AppContext] updateCRA', { craId, updates });
+        // Optimistic update
+        const previousCras = cras;
+        const optimisticUpdatedAt = new Date().toISOString();
+        setCras((prev) => prev.map((c) => c.id === craId ? { ...c, ...updates, updated_at: optimisticUpdatedAt } : c));
+
         try {
             const response = await apiClient.patch(`/cra/${craId}`, updates);
             console.debug('[AppContext] updateCRA response', response.data);
             if (response.data.success) {
+                const updated = response.data.data;
+                setCras((prev) => prev.map((c) => c.id === craId ? updated : c));
                 toast({ title: "CRA mis à jour." });
                 await logAction(updates.status ? `Changement statut CRA: ${updates.status}` : 'Modification CRA', { craId, updates });
-                // Refresh data
-                fetchData(true);
+            } else {
+                setCras(previousCras);
             }
         } catch (error) {
+            setCras(previousCras);
             toast({ variant: 'destructive', title: 'Erreur', description: 'La mise à jour du CRA a échoué.' });
         }
     };
@@ -287,10 +302,10 @@ export const AppProvider = ({ children }) => {
             const response = await apiClient.post('/cra', craData);
             console.debug('[AppContext] createCRA response', response.data);
             if (response.data.success) {
+                const created = response.data.data;
+                setCras((prev) => [...prev, created]);
                 toast({ title: "Nouveau CRA créé." });
                 await logAction('Création CRA', { userId, month: normalizedMonth });
-                // Refresh data
-                fetchData(true);
             }
         } catch (error) {
             toast({ variant: 'destructive', title: 'Erreur', description: 'La création du CRA a échoué.' });
