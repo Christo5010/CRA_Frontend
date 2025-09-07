@@ -410,7 +410,7 @@ const CRAPage = () => {
           <div className="p-2">
             <input
               type="text"
-              className="w-full border rounded-md px-3 py-2 font-[cursive]"
+              className="w-full border rounded-md px-3 py-2 font-[] signature-text"
               placeholder="Tapez votre signature ici..."
               value={signatureText}
               onChange={(e) => setSignatureText(e.target.value)}
@@ -422,7 +422,7 @@ const CRAPage = () => {
             />
             <p className="mt-2 text-sm text-gray-500">
               Exemple de rendu manuscrit :
-              <span className="ml-2 font-[cursive] text-xl">{signatureText}</span>
+              <span className="ml-2 font-[] signature-text text-xl">{signatureText}</span>
             </p>
           </div>
 

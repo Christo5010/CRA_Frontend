@@ -33,7 +33,9 @@ const CRAPreview = ({ isOpen, onOpenChange, cra, onPdfGenerated }) => {
     <html>
       <head>
         <title>CRA - ${consultant} (${month} ${year})</title>
-        <link href="https://fonts.googleapis.com/css2?family=Style+Script&display=swap" rel="stylesheet">
+        <link
+          href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap"
+          rel="stylesheet">
         <style>
           @media print {
             body {
@@ -186,7 +188,7 @@ const CRAPreview = ({ isOpen, onOpenChange, cra, onPdfGenerated }) => {
               border-top: 1px dashed #ccc; /* Dashed line for signature area */
             }
             .signature-text {
-              font-family: 'Style Script', cursive;
+              font-family: 'Great Vibes', cursive;
               font-size: 28px;
               color: #222;
             }
@@ -275,7 +277,7 @@ const CRAPreview = ({ isOpen, onOpenChange, cra, onPdfGenerated }) => {
             <p><strong>Signature Consultant</strong></p>
             ${
                 signature_text
-                  ? `<div style="font-family: 'Style Script', cursive;" class="signature-text">${signature_text}</div>`
+                  ? `<div class="signature-text">${signature_text}</div>`
                   : (signatureDataUrl || signature_url
                       ? `<img src="${signatureDataUrl || signature_url}" alt="Signature Consultant" />`
                       : `<p>${consultant}</p>`)
