@@ -242,6 +242,7 @@ const ManagementCRAPage = () => {
 
       <Card>
         <CardContent className="p-0">
+          <div className="overflow-x-auto md:overflow-visible" style={{ WebkitOverflowScrolling: 'touch' }}>
           <Table>
             <TableHeader className="bg-gray-50"><TableRow><TableHead>Consultant</TableHead><TableHead>Client</TableHead><TableHead>Année</TableHead><TableHead>Mois</TableHead><TableHead>Total (J)</TableHead><TableHead>Statut</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
             <TableBody>
@@ -281,6 +282,7 @@ const ManagementCRAPage = () => {
               ) : (<TableRow><TableCell colSpan={7} className="text-center h-24 text-muted-foreground">Aucun CRA trouvé.</TableCell></TableRow>)}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
       <CRAPreview isOpen={!!previewCra} onOpenChange={(isOpen) => !isOpen && setPreviewCra(null)} cra={previewCra} />

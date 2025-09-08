@@ -16,6 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarIcon, History } from "lucide-react"
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
+import apiClient from '@/lib/apiClient';
 
 const StatCard = ({ title, value, color }) => (
     <Card className="flex-1 min-w-[120px] bg-card shadow-sm hover:shadow-md transition-shadow">
@@ -116,6 +117,7 @@ const DashboardPage = () => {
 
                 const craData = {
                     id: existingCRA ? existingCRA.id : `${consultant.id}-${format(month, 'yyyy-MM')}`,
+                    user_id: existingCRA ? existingCRA.user_id : consultant.id,
                     consultantName: consultant.name,
                     clientName: clients.find(c => c.id === consultant.client_id)?.name || 'N/A',
                     month: month,
@@ -161,6 +163,19 @@ const DashboardPage = () => {
         };
     }, [cras, profiles, filters]);
 
+    // const handleSelectAllForReminder = (checked) => {
+    //     if (checked) {
+    //         setSelectedForReminder(consultantsToRemind.map(c => c.id));
+    //     } else {
+    //         setSelectedForReminder([]);
+    //     }
+    // };
+
+    // const handleSelectForReminder = (craId) => {
+    //     setSelectedForReminder(prev => 
+    //         prev.includes(craId) ? prev.filter(id => id !== craId) : [...prev, craId]
+    //     );
+    // };
     const handleSelectAllForReminder = (checked) => {
         if (checked) {
             setSelectedForReminder(consultantsToRemind.map(c => c.id));
@@ -169,33 +184,41 @@ const DashboardPage = () => {
         }
     };
 
-    const handleSelectForReminder = (craId) => {
-        setSelectedForReminder(prev => 
-            prev.includes(craId) ? prev.filter(id => id !== craId) : [...prev, craId]
-        );
-    };
-    
-    const handleReminders = (type) => {
-        let reminderCount = 0;
-        let reminderList = [];
+        const handleSelectForReminder = (craId, checked) => {
+            setSelectedForReminder(prev =>
+                checked ? [...prev, craId] : prev.filter(id => id !== craId)
+            );
+        };
 
-        if(type === 'all') {
-            reminderCount = consultantsToRemind.length;
-            reminderList = consultantsToRemind.map(c => c.consultantName);
-            logAction('Envoi des relances à tous les retards');
-        } else if (type === 'selection' && selectedForReminder.length > 0) {
-            reminderCount = selectedForReminder.length;
-            reminderList = consultantsToRemind
-                .filter(c => selectedForReminder.includes(c.id))
-                .map(c => c.consultantName);
-            logAction('Envoi des relances sélectives', { count: reminderCount, consultants: reminderList });
-            setSelectedForReminder([]);
+    
+    const [sending, setSending] = useState(false);
+    const handleReminders = async (type) => {
+        if (sending) return;
+        const toRemind = (type === 'all')
+          ? consultantsToRemind
+          : consultantsToRemind.filter(c => selectedForReminder.includes(c.id));
+
+        if (toRemind.length === 0) {
+            toast({ title: "Aucune relance à envoyer.", variant: 'destructive' });
+            return;
         }
 
-        if(reminderCount > 0){
-            toast({ title: "Relances envoyées !", description: `${reminderCount} consultant(s) notifié(s) (simulation).` });
-        } else {
-            toast({ title: "Aucune relance à envoyer.", variant: 'destructive' });
+        try {
+            setSending(true);
+            const rows = toRemind.map(c => ({ user_id: c.user_id || profiles.find(p => p.name === c.consultantName)?.id, month: format(startOfMonth(c.month), 'yyyy-MM-01') }));
+
+            const { data } = await apiClient.post('/automation/cra-document-reminders', { rows });
+            toast({ title: "Relances envoyées", description: `${data?.data?.sent ?? 0} email(s) envoyé(s).` });
+            // logAction('Envoi des relances', { count: data?.data?.sent, month: monthISO });
+            logAction('Envoi des relances', { 
+            count: data?.data?.sent, 
+            months: rows.map(r => r.month) 
+            });
+            setSelectedForReminder([]);
+        } catch (e) {
+            toast({ title: 'Erreur', description: e.message, variant: 'destructive' });
+        } finally {
+            setSending(false);
         }
     };
 
@@ -224,8 +247,8 @@ const DashboardPage = () => {
                         <Button variant="outline" size="sm" onClick={() => setDatePreset('this_quarter')}>Ce trimestre</Button>
                     </div>
                     <div className="flex gap-2">
-                        <Button className="bg-orange-500 hover:bg-orange-600 text-white" onClick={() => handleReminders('all')}>Relancer — tous les retards</Button>
-                         <Button variant="secondary" onClick={() => handleReminders('selection')} disabled={selectedForReminder.length === 0}>Relancer la sélection ({selectedForReminder.length})</Button>
+                        <Button className="bg-orange-500 hover:bg-orange-600 text-white" onClick={() => handleReminders('all')} disabled={sending}>Relancer — tous les retards</Button>
+                        <Button variant="secondary" onClick={() => handleReminders('selection')} disabled={selectedForReminder.length === 0 || sending}>Relancer la sélection ({selectedForReminder.length})</Button>
                     </div>
                 </CardContent>
             </Card>
@@ -259,9 +282,16 @@ const DashboardPage = () => {
                                 <TableHead className="text-right">
                                     <div className="flex items-center justify-end gap-2">
                                         <span>Relancer</span>
-                                        <Checkbox 
-                                            onCheckedChange={handleSelectAllForReminder}
-                                            checked={consultantsToRemind.length > 0 && selectedForReminder.length === consultantsToRemind.length}
+                                        <Checkbox
+                                            checked={
+                                                consultantsToRemind.length > 0 &&
+                                                selectedForReminder.length === consultantsToRemind.length
+                                            }
+                                            indeterminate={
+                                                selectedForReminder.length > 0 &&
+                                                selectedForReminder.length < consultantsToRemind.length
+                                            }
+                                            onCheckedChange={(checked) => handleSelectAllForReminder(!!checked)}
                                         />
                                     </div>
                                 </TableHead>
@@ -278,7 +308,7 @@ const DashboardPage = () => {
                                         <TableCell className="text-right">
                                             <Checkbox
                                                 checked={selectedForReminder.includes(cra.id)}
-                                                onCheckedChange={() => handleSelectForReminder(cra.id)}
+                                                onCheckedChange={(checked) => handleSelectForReminder(cra.id, !!checked)}
                                             />
                                         </TableCell>
                                     </TableRow>

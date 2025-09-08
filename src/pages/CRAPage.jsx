@@ -291,7 +291,7 @@ const CRAPage = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-7 border-l border-t border-gray-200">
+        <div className="grid grid-cols-7 border-l border-t border-gray-200 overflow-x-auto md:overflow-visible" style={{ WebkitOverflowScrolling: 'touch' }}>
           {['LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM', 'DIM'].map(day => (
             <div key={day} className="text-center font-medium text-sm text-gray-500 py-2 border-r border-b bg-gray-50">{day}</div>
           ))}
