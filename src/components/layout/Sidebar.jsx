@@ -174,7 +174,7 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
     </aside>
 
     {/* Mobile sidebar overlay */}
-    {/* {mobileOpen && (
+    {mobileOpen && (
       <div className="fixed inset-0 z-30 md:hidden">
         <div className="absolute inset-0 bg-black/50" onClick={onClose} />
         <aside className="absolute left-0 top-0 bottom-0 w-64 bg-gray-800 text-white p-0 flex flex-col shadow-xl">
@@ -283,7 +283,7 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
           </div>
         </aside>
       </div>
-    )} */}
+    )}
     
     </>
   );
