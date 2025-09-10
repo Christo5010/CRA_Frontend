@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://cra-backend.vercel.app/v1/api';
+// const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://cra-backend.vercel.app/v1/api';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://cra-backend-iota.vercel.app/v1/api';
 
 // const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/v1/api';
 
