@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { getHolidays } from '@/lib/holidays';
+import sevenLogo from '@/assets/seven.png';
 
 const CRAPreview = ({ isOpen, onOpenChange, cra, onPdfGenerated }) => {
   const previewRef = useRef();
@@ -28,269 +29,178 @@ const CRAPreview = ({ isOpen, onOpenChange, cra, onPdfGenerated }) => {
 
   const handleDownload = () => {
   const printWindow = window.open('', '_blank');
+  const logoUrl = new URL(sevenLogo, window.location.origin).href;
   const craHtml = `
     <!DOCTYPE html>
     <html>
       <head>
+        <meta charset="utf-8" />
+        <base href="${window.location.origin}" />
         <title>CRA - ${consultant} (${month} ${year})</title>
         <link
           href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap"
           rel="stylesheet">
         <style>
+          @page {
+            margin: 20mm;
+          }
           @media print {
             body {
               margin: 0;
-              padding: 30px; /* Increased padding for more white space */
-              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* A bit softer font */
-              color: #333; /* Slightly softer main text color */
-              -webkit-font-smoothing: antialiased; /* Font smoothing for better rendering */
-              -moz-osx-font-smoothing: grayscale; /* Font smoothing for better rendering */
+              padding: 0;
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+              color: #333;
+              -webkit-font-smoothing: antialiased;
+              -moz-osx-font-smoothing: grayscale;
             }
+            .container { padding: 30px; }
             .cra-header {
               display: flex;
               justify-content: space-between;
               align-items: center;
-              border-bottom: 1px solid #ddd; /* Lighter, thinner border */
-              padding-bottom: 15px; /* More padding */
-              margin-bottom: 30px; /* More margin */
+              border-bottom: 1px solid #ddd;
+              padding-bottom: 15px;
+              margin-bottom: 30px;
             }
             .cra-header h1 {
-              font-size: 26px; /* Slightly larger */
+              font-size: 26px;
               margin: 0;
               color: #222;
             }
             .cra-header p {
               margin: 3px 0;
               font-size: 13px;
-              color: #777; /* Softer address color */
+              color: #777;
             }
-            .cra-logo {
-              font-size: 52px; /* Larger logo */
-              font-weight: bold;
-              color: #007bff; /* Example accent color, adjust as needed */
-              background-color: #e6f2ff; /* Light background for the logo */
-              padding: 5px 15px;
-              border-radius: 8px; /* Rounded corners for the logo box */
-              box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05); /* Subtle shadow */
+            .cra-logo img {
+              height: 64px;
+              width: auto;
+              object-fit: contain;
+              display: block;
             }
             h2 {
               text-align: center;
-              margin: 25px 0 30px 0; /* More vertical spacing */
+              margin: 25px 0 30px 0;
               font-size: 22px;
               text-transform: uppercase;
               color: #444;
-              letter-spacing: 0.5px; /* Slightly spaced letters */
+              letter-spacing: 0.5px;
             }
             .cra-info {
               display: grid;
               grid-template-columns: 1fr 1fr;
-              gap: 15px; /* Increased gap */
+              gap: 15px;
               margin-bottom: 30px;
-              background-color: #f9f9f9; /* Light background for info section */
+              background-color: #f9f9f9;
               padding: 15px 20px;
-              border-radius: 8px; /* Rounded corners */
-              box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03); /* Very subtle shadow */
-            }
-            .cra-info div {
-              display: flex;
-              justify-content: space-between;
-              font-size: 14px;
-              line-height: 1.5;
-            }
-            .cra-info div strong {
-                color: #555;
-            }
-            table {
-              width: 100%;
-              border-collapse: separate; /* Use separate to allow border-radius on cells */
-              border-spacing: 0; /* No space between cell borders */
-              margin-bottom: 30px;
-              border: 1px solid #eee; /* Light border for the whole table */
-              border-radius: 8px; /* Rounded corners for the table */
-              overflow: hidden; /* Ensures rounded corners are visible */
-            }
-            th, td {
-              border: none; /* Remove individual cell borders to use table border */
-              border-bottom: 1px solid #eee; /* Light separator between rows */
-              padding: 12px 8px; /* More padding */
-              text-align: center;
-              font-size: 13px;
-              white-space: nowrap;
-            }
-            th {
-              background: #f2f7fc; /* Lighter, subtle blue background for header */
-              color: #333;
-              font-weight: 600; /* Slightly bolder */
-              border-bottom: 1px solid #ddd; /* Slightly darker separator below header */
-            }
-            tr:last-child td {
-              border-bottom: none; /* No border for the last row */
-            }
-            .summary {
-              display: flex;
-              gap: 15px; /* Increased gap */
-              margin-top: 30px;
-            }
-            .summary-item {
-              flex: 1;
-              border: 1px solid #eee; /* Lighter border */
-              padding: 15px; /* More padding */
-              text-align: center;
-              border-radius: 8px; /* Rounded corners */
-              background-color: #fcfcfc; /* Light background */
-              box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03); /* Subtle shadow */
-            }
-            .summary-item div:first-child {
-                font-size: 22px;
-                font-weight: bold;
-                color: #007bff; /* Accent color for numbers */
-                margin-bottom: 5px;
-            }
-            .summary-item div:last-child {
-                font-size: 12px;
-                color: #777;
-                text-transform: uppercase;
-                letter-spacing: 0.2px;
-            }
-            .summary-total {
-              background: #e6f2ff; /* Distinct background for total */
-              border-color: #cce0ff;
-              color: #0056b3;
-              box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
-            }
-            .summary-total div:first-child {
-                color: #0056b3;
-            }
-            .comments {
-              margin: 30px 0;
-              padding: 15px 20px;
-              border: 1px solid #eee; /* Lighter border */
-              background: #fdfdfd; /* Very light background */
-              font-size: 14px;
-              border-radius: 8px; /* Rounded corners */
+              border-radius: 8px;
               box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
-              color: #555;
             }
-            .comments strong {
-                color: #333;
-            }
-            .signatures {
-              display: grid;
-              grid-template-columns: 1fr 1fr;
-              gap: 60px; /* Increased gap */
-              margin-top: 50px;
-              font-size: 14px;
-              color: #555;
-            }
-            .signature-block {
-              text-align: left;
-              padding-top: 20px;
-              border-top: 1px dashed #ccc; /* Dashed line for signature area */
-            }
-            .signature-text {
-              font-family: 'Great Vibes', cursive;
-              font-size: 28px;
-              color: #222;
-            }
-
-            .signature-block p {
-                margin: 5px 0;
-                color: #777;
-            }
-            .signature-block img {
-              width: 200px; /* Slightly adjusted size */
-              height: 70px; /* Slightly adjusted size */
-              object-fit: contain;
-              margin-bottom: 5px;
-              border: none; /* Remove border from image itself */
-            }
-            .footer {
-              margin-top: 60px; /* More margin */
-              text-align: center;
-              font-size: 11px;
-              color: #999; /* Even softer footer text */
-              padding-top: 15px;
-              border-top: 1px solid #eee; /* Light separator */
-            }
+            .cra-info div { display: flex; justify-content: space-between; font-size: 14px; line-height: 1.5; }
+            .cra-info div strong { color: #555; }
+            table { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 30px; border: 1px solid #eee; border-radius: 8px; overflow: hidden; }
+            thead { display: table-header-group; }
+            tfoot { display: table-row-group; }
+            tr { page-break-inside: avoid; }
+            th, td { border: none; border-bottom: 1px solid #eee; padding: 12px 8px; text-align: center; font-size: 13px; white-space: nowrap; }
+            th { background: #f2f7fc; color: #333; font-weight: 600; border-bottom: 1px solid #ddd; }
+            tr:last-child td { border-bottom: none; }
+            .avoid-break { page-break-inside: avoid; break-inside: avoid; }
+            .summary { display: flex; gap: 15px; margin-top: 30px; }
+            .summary-item { flex: 1; border: 1px solid #eee; padding: 15px; text-align: center; border-radius: 8px; background-color: #fcfcfc; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03); }
+            .summary-item div:first-child { font-size: 22px; font-weight: bold; color: #007bff; margin-bottom: 5px; }
+            .summary-item div:last-child { font-size: 12px; color: #777; text-transform: uppercase; letter-spacing: 0.2px; }
+            .summary-total { background: #e6f2ff; border-color: #cce0ff; color: #0056b3; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08); }
+            .summary-total div:first-child { color: #0056b3; }
+            .comments { margin: 30px 0; padding: 15px 20px; border: 1px solid #eee; background: #fdfdfd; font-size: 14px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03); color: #555; }
+            .comments strong { color: #333; }
+            .signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; margin-top: 50px; font-size: 14px; color: #555; }
+            .signature-block { text-align: left; padding-top: 20px; border-top: 1px dashed #ccc; }
+            .signature-text { font-family: 'Great Vibes', cursive; font-size: 28px; color: #222; }
+            .signature-block p { margin: 5px 0; color: #777; }
+            .signature-block img { width: 200px; height: 70px; object-fit: contain; margin-bottom: 5px; border: none; }
+            .footer { margin-top: 60px; text-align: center; font-size: 11px; color: #999; padding-top: 15px; border-top: 1px solid #eee; }
           }
         </style>
       </head>
       <body>
-        <div class="cra-header">
-          <div>
-            <h1>Seven Opportunity</h1>
-            <p>123 Rue de l'Exemple, 75001 Paris</p>
+        <div class="container">
+          <div class="cra-header avoid-break">
+            <div>
+              <h1>Seven Opportunity</h1>
+              <p>123 Rue de l'Exemple, 75001 Paris</p>
+            </div>
+            <div class="cra-logo"><img src="${logoUrl}" alt="Seven Opportunity" /></div>
           </div>
-          <div class="cra-logo">7</div>
-        </div>
 
-        <h2>Feuille de temps - ${month} ${year}</h2>
+          <h2>Feuille de temps - ${month} ${year}</h2>
 
-        <div class="cra-info">
-          <div><strong>Consultant :</strong> <span>${consultant}</span></div>
-          <div><strong>Client :</strong> <span>${client || 'N/A'}</span></div>
-          <div><strong>Total jours travaillés :</strong> <span>${totalDays}</span></div>
-          <div><strong>Adresse client :</strong> <span>${clientAddress || 'N/A'}</span></div>
-        </div>
+          <div class="cra-info avoid-break">
+            <div><strong>Consultant :</strong> <span>${consultant || 'N/A'}</span></div>
+            <div><strong>Client :</strong> <span>${client || 'N/A'}</span></div>
+            <div><strong>Total jours travaillés :</strong> <span>${totalDays}</span></div>
+            <div><strong>Adresse client :</strong> <span>${clientAddress || 'N/A'}</span></div>
+          </div>
 
-        <table>
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Jour</th>
-              <th>Détail</th>
-              <th>Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${calendarDays.map(dateStr => {
-              const date = new Date(dateStr);
-              date.setUTCHours(12);
-              const day = days[dateStr];
-              let detail = '';
-              if (day.status === 'worked_1') detail = 'Journée travaillée';
-              else if (day.status === 'worked_0_5') detail = 'Demi-journée';
-              else if (day.status === 'off') detail = 'Absence';
-              return `
-                <tr>
-                  <td>${format(date, 'dd/MM/yyyy')}</td>
-                  <td>${format(date, 'EEEE', { locale: fr })}</td>
-                  <td>${detail}</td>
-                  <td>${day.status === 'worked_1' ? '1' : day.status === 'worked_0_5' ? '0.5' : '0'}</td>
-                </tr>
-              `;
-            }).join('')}
-          </tbody>
-        </table>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Jour</th>
+                <th>Détail</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${calendarDays.map(dateStr => {
+                const date = new Date(dateStr);
+                date.setUTCHours(12);
+                const day = days[dateStr];
+                let detail = '';
+                if (day.status === 'worked_1') detail = 'Journée travaillée';
+                else if (day.status === 'worked_0_5') detail = 'Demi-journée';
+                else if (day.status === 'off') detail = 'Absence';
+                return `
+                  <tr>
+                    <td>${format(date, 'dd/MM/yyyy')}</td>
+                    <td>${format(date, 'EEEE', { locale: fr })}</td>
+                    <td>${detail}</td>
+                    <td>${day.status === 'worked_1' ? '1' : day.status === 'worked_0_5' ? '0.5' : '0'}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
 
-        <div class="summary">
-            <div class="summary-item"><div>${totalWorked1}</div><div>Jours travaillés</div></div>
-            <div class="summary-item"><div>${totalWorked05}</div><div>Demi-journées</div></div>
-            <div class="summary-item"><div>${totalOff}</div><div>Absences</div></div>
-            <div class="summary-item summary-total"><div>${totalDays}</div><div>Total jours</div></div>
-        </div>
+          <div class="summary avoid-break">
+              <div class="summary-item"><div>${totalWorked1}</div><div>Jours travaillés</div></div>
+              <div class="summary-item"><div>${totalWorked05}</div><div>Demi-journées</div></div>
+              <div class="summary-item"><div>${totalOff}</div><div>Absences</div></div>
+              <div class="summary-item summary-total"><div>${totalDays}</div><div>Total jours</div></div>
+          </div>
 
-        ${comment ? `<div class="comments"><strong>Commentaires :</strong><br/>${comment}</div>` : ''}
+          ${comment ? `<div class="comments avoid-break"><strong>Commentaires :</strong><br/>${comment}</div>` : ''}
 
-        <div class="signatures">
-          <div class="signature-block">
-            <p><strong>Signature Consultant</strong></p>
-            ${
+          <div class="signatures avoid-break">
+            <div class="signature-block">
+              <p><strong>Signature Consultant</strong></p>
+              ${
                 signature_text
                   ? `<div class="signature-text">${signature_text}</div>`
                   : (signatureDataUrl || signature_url
-                      ? `<img src="${signatureDataUrl || signature_url}" alt="Signature Consultant" />`
+                      ? `<img id="consultantSig" src="${signatureDataUrl || signature_url}" alt="Signature Consultant" />`
                       : `<p>${consultant}</p>`)
               }
+            </div>
+            <div class="signature-block">
+              <p><strong>Signature Client</strong></p>
+              <div class="signature-text">${client || ''}</div>
+            </div>
           </div>
-          <div class="signature-block">
-            <p><strong>Signature Client</strong></p>
-            <div class="signature-text">${client}</div>
-          </div>
-        </div>
 
-        <div class="footer">
-          <p>Document généré le ${new Date().toLocaleString()}</p>
+          <div class="footer avoid-break">
+            <p>Document généré le ${new Date().toLocaleString()}</p>
+          </div>
         </div>
       </body>
     </html>
@@ -298,7 +208,6 @@ const CRAPreview = ({ isOpen, onOpenChange, cra, onPdfGenerated }) => {
   printWindow.document.write(craHtml);
   printWindow.document.close();
 
-  // Wait for consultant signature to load if it exists
   const tryPrint = () => {
     printWindow.focus();
     printWindow.print();
@@ -308,20 +217,16 @@ const CRAPreview = ({ isOpen, onOpenChange, cra, onPdfGenerated }) => {
   if (signatureDataUrl || signature_url) {
     const img = printWindow.document.getElementById('consultantSig');
     if (img) {
-      // Both onload and onerror will trigger the print, ensuring it happens
-      // even if the image fails to load.
       img.onload = tryPrint;
       img.onerror = tryPrint;
-      // In case the image is already cached and onload doesn't fire
       if (img.complete) {
         tryPrint();
       }
     } else {
-      setTimeout(tryPrint, 500); // Failsafe timeout
+      setTimeout(tryPrint, 200);
     }
   } else {
-    // If there's no signature, print immediately
-    tryPrint();
+    setTimeout(tryPrint, 50);
   }
 };
 
@@ -348,7 +253,7 @@ const CRAPreview = ({ isOpen, onOpenChange, cra, onPdfGenerated }) => {
                         <p className="text-gray-600">123 Rue de l'Exemple, 75001 Paris</p>
                     </div>
                     <div className="w-24 h-24 bg-gray-200 flex items-center justify-center">
-                       <span className="text-5xl font-bold text-gray-800">7</span>
+                       <img src={sevenLogo} alt="Seven Opportunity" className="max-h-24 w-auto object-contain" />
                     </div>
                 </header>
 

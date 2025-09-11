@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import Sidebar from '@/components/layout/Sidebar';
 import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
-
+import logo from '../../assets/logo.png'
 const AppLayout = ({ children }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   return (
@@ -14,7 +14,10 @@ const AppLayout = ({ children }) => {
           <Button variant="outline" size="icon" onClick={() => setMobileOpen(true)}>
             <Menu className="w-5 h-5" />
           </Button>
-          <span className="font-semibold">Seven Opportunity</span>
+          {/* <span className="font-semibold">Seven Opportunity</span> */}
+          <div className="w-48 h-16">
+                    <img src={logo} alt="logo" />
+                  </div>
           <div style={{ width: 40 }} />
         </div>
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">

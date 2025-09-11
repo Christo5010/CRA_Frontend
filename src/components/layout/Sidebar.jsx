@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAppData } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
+import logo from '../../assets/logo.png'
 
 const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
   const { signOut, user } = useAuth();
@@ -62,10 +63,13 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
     {/* Desktop sidebar */}
     <aside className="w-64 bg-gray-800 text-white flex flex-col hidden md:flex">
       <div className="p-6 flex items-center space-x-3">
-        <div className="w-10 h-10 bg-white text-gray-800 rounded-lg flex items-center justify-center">
+        {/* <div className="w-10 h-10 bg-white text-gray-800 rounded-lg flex items-center justify-center">
           <span className="text-2xl font-bold">7</span>
+        </div> */}
+        {/* <span className="text-xl font-semibold">Seven Opportunity</span> */}
+        <div className="w-48 h-16">
+          <img src={logo} alt="logo" className="filter invert brightness-0" />
         </div>
-        <span className="text-xl font-semibold">Seven Opportunity</span>
       </div>
 
       <nav className="flex-1 px-4 py-2">
@@ -179,10 +183,13 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
         <div className="absolute inset-0 bg-black/50" onClick={onClose} />
         <aside className="absolute left-0 top-0 bottom-0 w-64 bg-gray-800 text-white p-0 flex flex-col shadow-xl">
           <div className="p-6 flex items-center space-x-3 border-b border-gray-700">
-            <div className="w-10 h-10 bg-white text-gray-800 rounded-lg flex items-center justify-center">
+            {/* <div className="w-10 h-10 bg-white text-gray-800 rounded-lg flex items-center justify-center">
               <span className="text-2xl font-bold">7</span>
             </div>
-            <span className="text-xl font-semibold">Seven Opportunity</span>
+            <span className="text-xl font-semibold">Seven Opportunity</span> */}
+            <div className="w-48 h-16">
+              <img src={logo} alt="logo" className="filter invert brightness-0" />
+            </div>
           </div>
           <nav className="flex-1 px-4 py-2 overflow-y-auto">
             <ul className="space-y-2">

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
+import logo from '../assets/logo.png'
 import apiClient from '@/lib/apiClient';
 
 const LoginPage = () => {
@@ -76,11 +77,14 @@ const LoginPage = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
       <div className="w-full max-w-sm animate-fadeInUp">
         <div className="bg-white p-8 rounded-xl shadow-lg">
+            {/* <div className="inline-flex items-center justify-center w-14 h-14 bg-gray-800 text-white rounded-lg mb-4">
+              <span className="text-2xl font-bold">7</span> 
+              </div> */}
+            {/* <h1 className="text-2xl font-bold text-gray-800">Seven Opportunity</h1> */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-14 h-14 bg-gray-800 text-white rounded-lg mb-4">
-              <span className="text-2xl font-bold">7</span>
+            <div className="inline-flex items-center justify-center w-48 h-24 overflow-hidden">
+              <img src={logo} alt="logo" className="max-w-full max-h-full object-contain" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-800">Seven Opportunity</h1>
             <p className="text-gray-500">Connectez-vous à votre espace</p>
           </div>
 
