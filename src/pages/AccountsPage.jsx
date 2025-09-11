@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dialog";
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
+import { formatISO, startOfMonth } from 'date-fns';
 
 const RoleBadge = ({ role }) => {
   const roleClasses = {
@@ -39,12 +40,18 @@ const RoleBadge = ({ role }) => {
 };
 
 const AccountsPage = () => {
-  const { profiles, clients, fetchData } = useAppData();
+  const { profiles, clients, fetchData, createCRA } = useAppData();
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [currentClient, setCurrentClient] = useState(null);
   const [newClientName, setNewClientName] = useState("");
+
+  // Dialog for special CRA creation
+  const [isCreateCRADialogOpen, setIsCreateCRADialogOpen] = useState(false);
+  const [createTargetClient, setCreateTargetClient] = useState(null);
+  const [selectedConsultantId, setSelectedConsultantId] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState(() => formatISO(startOfMonth(new Date()), { representation: 'date' }));
 
   const openUserModal = (user = null) => {
     const userData = user ? 
@@ -61,6 +68,15 @@ const AccountsPage = () => {
         setCurrentClient({ name: newClientName, address: '' });
     }
     setIsClientModalOpen(true);
+  };
+
+  const openCreateCRADialog = (client) => {
+    setCreateTargetClient(client);
+    // Default consultant list to those linked to this client
+    const defaultConsultant = profiles.find(p => (p.role === 'consultant' || p.role === 'Consultant') && p.client_id === client.id);
+    setSelectedConsultantId(defaultConsultant ? defaultConsultant.id : "");
+    setSelectedMonth(formatISO(startOfMonth(new Date()), { representation: 'date' }));
+    setIsCreateCRADialogOpen(true);
   };
 
   const handleSaveUser = async () => {
@@ -133,6 +149,23 @@ const AccountsPage = () => {
         }
     }
   }
+
+  const handleCreateSpecialCRA = async () => {
+    if (!createTargetClient || !selectedConsultantId || !selectedMonth) {
+      toast({ variant: 'destructive', title: 'Champs requis', description: 'Sélectionnez un consultant et un mois.' });
+      return;
+    }
+    // Create CRA with flags: hide header and hide client signature
+    try {
+      await createCRA(selectedConsultantId, new Date(selectedMonth), {}, { hide_header: true, hide_client_signature: true });
+      toast({ title: 'CRA créé (entête et signature client masqués).' });
+      setIsCreateCRADialogOpen(false);
+      fetchData(true);
+    } catch (e) {
+      // createCRA already toasts on error
+    }
+  };
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }} className="space-y-8">
       <div>
@@ -207,8 +240,9 @@ const AccountsPage = () => {
                             <TableRow key={client.id}>
                                 <TableCell>{client.name}</TableCell>
                                 <TableCell>{client.address || 'Non définie'}</TableCell>
-                                <TableCell className="text-right">
+                                <TableCell className="text-right space-x-2">
                                     <Button variant="ghost" size="icon" onClick={() => openClientModal(client)}><Edit className="h-4 w-4" /></Button>
+                                    <Button variant="outline" size="sm" onClick={() => openCreateCRADialog(client)}>Créer CRA (masquer entête et signature client)</Button>
                                 </TableCell>
                             </TableRow>
                         ))}
@@ -265,6 +299,37 @@ const AccountsPage = () => {
                 <Label htmlFor="clientAddress">Adresse</Label><Input id="clientAddress" value={currentClient?.address || ''} onChange={(e) => setCurrentClient({...currentClient, address: e.target.value})} />
             </div>
             <DialogFooter><Button variant="outline" onClick={() => setIsClientModalOpen(false)}>Annuler</Button><Button onClick={handleSaveClient}>Enregistrer</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isCreateCRADialogOpen} onOpenChange={setIsCreateCRADialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Créer un CRA masqué pour {createTargetClient?.name}</DialogTitle>
+            <DialogDescription>Sélectionnez le consultant et le mois. L'entête et la signature client seront masqués.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <Label>Consultant</Label>
+            <Select value={selectedConsultantId} onValueChange={(value) => setSelectedConsultantId(value)}>
+              <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+              <SelectContent>
+                {profiles.filter(p => (p.role === 'consultant' || p.role === 'Consultant') && p.client_id === createTargetClient?.id).map(p => (
+                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Label>Mois</Label>
+            <Input type="month" value={selectedMonth.slice(0,7)} onChange={(e) => {
+              const value = e.target.value;
+              // Convert yyyy-MM to an ISO date representing first of month
+              setSelectedMonth(`${value}-01`);
+            }} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateCRADialogOpen(false)}>Annuler</Button>
+            <Button onClick={handleCreateSpecialCRA}>Créer</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </motion.div>

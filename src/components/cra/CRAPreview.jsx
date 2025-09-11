@@ -26,6 +26,8 @@ const CRAPreview = ({ isOpen, onOpenChange, cra, onPdfGenerated }) => {
   const signature_text = cra.signature_text || '';
   const month = cra.monthName || (cra.month ? format(new Date(cra.month), 'LLLL', { locale: fr }) : '');
   const year = cra.year || (cra.month ? format(new Date(cra.month), 'yyyy') : '');
+  const hideHeader = !!cra.hide_header;
+  const hideClientSignature = !!cra.hide_client_signature;
 
   const handleDownload = () => {
   const printWindow = window.open('', '_blank');
@@ -55,7 +57,7 @@ const CRAPreview = ({ isOpen, onOpenChange, cra, onPdfGenerated }) => {
             }
             .container { padding: 30px; }
             .cra-header {
-              display: flex;
+              display: ${hideHeader ? 'none' : 'flex'};
               justify-content: space-between;
               align-items: center;
               border-bottom: 1px solid #ddd;
@@ -192,10 +194,11 @@ const CRAPreview = ({ isOpen, onOpenChange, cra, onPdfGenerated }) => {
                       : `<p>${consultant}</p>`)
               }
             </div>
+            ${hideClientSignature ? '' : `
             <div class="signature-block">
               <p><strong>Signature Client</strong></p>
               <div class="signature-text">${client || ''}</div>
-            </div>
+            </div>`}
           </div>
 
           <div class="footer avoid-break">
@@ -247,6 +250,7 @@ const CRAPreview = ({ isOpen, onOpenChange, cra, onPdfGenerated }) => {
         
         <div className="max-h-[70vh] overflow-y-auto p-2" ref={previewRef}>
             <div className="p-8 bg-white text-black">
+                {!hideHeader && (
                 <header className="flex justify-between items-center pb-4 border-b-2 border-gray-800">
                     <div>
                         <h1 className="text-3xl font-bold text-gray-800">Seven Opportunity</h1>
@@ -256,6 +260,7 @@ const CRAPreview = ({ isOpen, onOpenChange, cra, onPdfGenerated }) => {
                        <img src={sevenLogo} alt="Seven Opportunity" className="max-h-24 w-auto object-contain" />
                     </div>
                 </header>
+                )}
 
                 <section className="my-8">
                     <h2 className="text-xl font-semibold text-center uppercase mb-4 text-gray-800">Feuille de temps - {month} {year}</h2>
@@ -333,10 +338,12 @@ const CRAPreview = ({ isOpen, onOpenChange, cra, onPdfGenerated }) => {
                               <p>{consultant}</p>
                             )}
                         </div>
+                        {!hideClientSignature && (
                         <div>
                             <p className="font-semibold mb-2">Signature Client</p>
                             <div className="text-2xl font-[Style Script] text-black signature-text">{client}</div>
                         </div>
+                        )}
                     </div>
                 </footer>
             </div>

@@ -289,14 +289,17 @@ export const AppProvider = ({ children }) => {
         }
     };
     
-    const createCRA = async (userId, date, days) => {
+    const createCRA = async (userId, date, days, options = {}) => {
         try {
             const normalizedMonth = formatISO(startOfMonth(date), { representation: 'date' });
             const craData = {
                 user_id: userId,
                 month: normalizedMonth,
                 status: 'Brouillon',
-                days: days || {}
+                days: days || {},
+                // Optional flags
+                ...(options.hide_header !== undefined ? { hide_header: !!options.hide_header } : {}),
+                ...(options.hide_client_signature !== undefined ? { hide_client_signature: !!options.hide_client_signature } : {}),
             };
             console.debug('[AppContext] createCRA payload', craData);
             const response = await apiClient.post('/cra', craData);
@@ -305,7 +308,7 @@ export const AppProvider = ({ children }) => {
                 const created = response.data.data;
                 setCras((prev) => [...prev, created]);
                 toast({ title: "Nouveau CRA créé." });
-                await logAction('Création CRA', { userId, month: normalizedMonth });
+                await logAction('Création CRA', { userId, month: normalizedMonth, options });
             }
         } catch (error) {
             toast({ variant: 'destructive', title: 'Erreur', description: 'La création du CRA a échoué.' });

@@ -49,7 +49,76 @@ const ReviseDialog = ({ cra, onConfirm }) => {
 }
 
 const ActionLogDialog = () => {
-    const { actionLogs } = useAppData();
+    const { actionLogs, cras } = useAppData();
+
+    const findCraById = (id) => {
+        if (!id) return null;
+        return cras.find(c => String(c.id) === String(id)) || null;
+    };
+
+    const formatMonth = (value) => {
+        try {
+            const d = new Date(value);
+            return isNaN(d) ? String(value) : format(d, 'MMMM yyyy', { locale: fr });
+        } catch { return String(value || ''); }
+    };
+
+    const humanize = (log) => {
+        const actionRaw = String(log.action || '').trim();
+        const details = typeof log.details === 'string' ? (()=>{ try { return JSON.parse(log.details) } catch { return log.details } })() : (log.details || {});
+        const actorName = log.profiles?.name || log.user_name || 'Quelqu\u2019un';
+        const actorRole = (log.profiles?.role || log.user_role || '').toString();
+
+        // Try to enrich from CRA when craId present
+        const craFromContext = details?.craId ? findCraById(details.craId) : null;
+        const craMonthText = craFromContext ? formatMonth(craFromContext.month) : (details?.month ? formatMonth(details.month) : '');
+        const craConsultant = craFromContext?.profiles?.name
+            || (cras.find(c => c.id === craFromContext?.id)?.consultantName)
+            || '';
+
+        // Normalize status-change actions (FR/EN)
+        const isStatusChange = /^(Changement statut CRA:|Change of CRA status:)/i.test(actionRaw);
+        if (isStatusChange) {
+            const newStatus = actionRaw.split(':')[1]?.trim() || details?.updates?.status;
+            const contextText = craConsultant || craMonthText ? ` pour ${craConsultant || ''}${craConsultant && craMonthText ? ' · ' : ''}${craMonthText || ''}` : (details?.craId ? ` (${details.craId})` : '');
+            return `${actorName} a changé le statut du CRA${contextText} à \u00ab ${newStatus} \u00bb.`;
+        }
+
+        // Creation
+        if (/^Cr\u00e9ation CRA/i.test(actionRaw) || /^CRA creation/i.test(actionRaw)) {
+            const contextText = craConsultant || craMonthText ? ` pour ${craConsultant || ''}${craConsultant && craMonthText ? ' · ' : ''}${craMonthText || ''}` : '';
+            return `${actorName} a créé un CRA${contextText}.`;
+        }
+
+        // Modification
+        if (/^Modification CRA/i.test(actionRaw) || /^CRA update/i.test(actionRaw)) {
+            const u = details?.updates || {};
+            const parts = [];
+            if (u.status) parts.push(`statut → ${u.status}`);
+            if (u.revision_reason) parts.push(`motif de r\u00e9vision`);
+            if (u.days) parts.push('jours modifi\u00e9s');
+            if (u.comment !== undefined) parts.push('commentaire modifi\u00e9');
+            if (u.signature_text !== undefined) parts.push('signature modifi\u00e9e');
+            const what = parts.length ? ` (${parts.join(' · ')})` : '';
+            const contextText = craConsultant || craMonthText ? ` pour ${craConsultant || ''}${craConsultant && craMonthText ? ' · ' : ''}${craMonthText || ''}` : '';
+            return `${actorName} a modifié un CRA${contextText}${what}.`;
+        }
+
+        // Deletion
+        if (/^Suppression CRA/i.test(actionRaw) || /^CRA deletion/i.test(actionRaw)) {
+            const contextText = craConsultant || craMonthText ? ` pour ${craConsultant || ''}${craConsultant && craMonthText ? ' · ' : ''}${craMonthText || ''}` : '';
+            return `${actorName} a supprimé un CRA${contextText}.`;
+        }
+
+        // Reminders
+        if (details && (details.count || details.months)) {
+            const months = Array.isArray(details.months) ? details.months.join(', ') : '';
+            return `${actorName} a envoyé ${details.count || 0} relances (${months}).`;
+        }
+
+        return `${actorName} a effectu\u00e9 l\u2019action \u00ab ${actionRaw || 'activit\u00e9'} \u00bb.`;
+    };
+
     return (
         <Dialog>
             <DialogTrigger asChild><Button variant="outline"><History className="w-4 h-4 mr-2" />Journal d'activité</Button></DialogTrigger>
@@ -62,9 +131,9 @@ const ActionLogDialog = () => {
                             {actionLogs.map((log) => (
                                 <TableRow key={log.id}>
                                     <TableCell>{format(new Date(log.created_at), 'dd/MM/yy HH:mm:ss')}</TableCell>
-                                    <TableCell>{log.user_name} ({log.user_role})</TableCell>
+                                    <TableCell>{(log.profiles?.name || log.user_name || '—')} {(log.profiles?.role || log.user_role) ? `(${log.profiles?.role || log.user_role})` : ''}</TableCell>
                                     <TableCell>{log.action}</TableCell>
-                                    <TableCell>{JSON.stringify(log.details)}</TableCell>
+                                    <TableCell>{humanize(log)}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
