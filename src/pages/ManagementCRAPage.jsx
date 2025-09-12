@@ -18,6 +18,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from "@/components/ui/dialog";
+import { PlusCircle } from "lucide-react";
 import CRAPreview from '@/components/cra/CRAPreview';
 
 const StatusBadge = ({ status }) => {
@@ -47,6 +48,76 @@ const ReviseDialog = ({ cra, onConfirm }) => {
         </Dialog>
     )
 }
+
+const CreateCRADialog = ({ isOpen, onOpenChange, profiles, createCRA, fetchData }) => {
+    const [selectedConsultantId, setSelectedConsultantId] = useState('');
+    const [selectedMonth, setSelectedMonth] = useState('');
+    const { toast } = useToast();
+
+    const handleCreateCRA = async () => {
+        if (!selectedConsultantId || !selectedMonth) {
+            toast({ variant: 'destructive', title: 'Champs requis', description: 'Sélectionnez un consultant et un mois.' });
+            return;
+        }
+        
+        try {
+            await createCRA(selectedConsultantId, new Date(selectedMonth), {}, { hide_header: true, hide_client_signature: true });
+            toast({ title: "CRA créé sans en-tête et signature." });
+            onOpenChange(false);
+            setSelectedConsultantId('');
+            setSelectedMonth('');
+            fetchData(true);
+        } catch (e) {
+            // createCRA already toasts on error
+        }
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Créer un CRA sans en-tête et signature</DialogTitle>
+                    <DialogDescription>
+                        Créez un CRA pour un consultant sans en-tête et sans signature client.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                    <div>
+                        <label className="text-sm font-medium">Consultant</label>
+                        <Select value={selectedConsultantId} onValueChange={setSelectedConsultantId}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Sélectionnez un consultant" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {profiles.filter(p => p.role === 'consultant' || p.role === 'Consultant').map(profile => (
+                                    <SelectItem key={profile.id} value={profile.id}>
+                                        {profile.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div>
+                        <label className="text-sm font-medium">Mois</label>
+                        <Input
+                            type="month"
+                            value={selectedMonth}
+                            onChange={(e) => setSelectedMonth(e.target.value)}
+                        />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button variant="outline">Annuler</Button>
+                    </DialogClose>
+                    <Button onClick={handleCreateCRA} disabled={!selectedConsultantId || !selectedMonth}>
+                        Créer le CRA
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
 
 const ActionLogDialog = () => {
     const { actionLogs, cras } = useAppData();
@@ -145,10 +216,11 @@ const ActionLogDialog = () => {
 };
 
 const ManagementCRAPage = () => {
-  const { cras, profiles, clients, updateCRA, deleteCRA, profile } = useAppData();
+  const { cras, profiles, clients, updateCRA, deleteCRA, createCRA, fetchData, profile } = useAppData();
   const { toast } = useToast();
   const [filters, setFilters] = useState({ searchTerm: '', consultant: 'Tous', client: 'Tous', status: 'Tous', dateRange: { from: startOfMonth(new Date()), to: endOfMonth(new Date()) } });
   const [previewCra, setPreviewCra] = useState(null);
+  const [isCreateCRADialogOpen, setIsCreateCRADialogOpen] = useState(false);
 
 
 
@@ -297,6 +369,12 @@ const ManagementCRAPage = () => {
                   <Select value={filters.status} onValueChange={(v) => handleFilterChange('status', v)}><SelectTrigger className="w-full sm:w-[180px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Tous">Statut (Tous)</SelectItem><SelectItem value="Non créé">Non créé</SelectItem><SelectItem value="Brouillon">Brouillon</SelectItem><SelectItem value="À réviser">À réviser</SelectItem><SelectItem value="Soumis">Soumis</SelectItem><SelectItem value="Validé">Validé</SelectItem><SelectItem value="Signature demandée">Signature demandée</SelectItem><SelectItem value="Signé">Signé</SelectItem></SelectContent></Select>
                   <Input placeholder="Recherche..." className="w-full sm:w-[240px]" value={filters.searchTerm} onChange={e => handleFilterChange('searchTerm', e.target.value)} />
                   {(profile?.role === 'admin' || profile?.role === 'Admin') && <ActionLogDialog />}
+                  {(profile?.role === 'manager' || profile?.role === 'Manager' || profile?.role === 'admin' || profile?.role === 'Admin') && (
+                    <Button onClick={() => setIsCreateCRADialogOpen(true)}>
+                      <PlusCircle className="w-4 h-4 mr-2" />
+                      Créer CRA sans en-tête
+                    </Button>
+                  )}
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <Popover><PopoverTrigger asChild><Button id="date" variant={"outline"} className={cn("w-[260px] justify-start text-left font-normal", !filters.dateRange.from && "text-muted-foreground")}><CalendarIcon className="mr-2 h-4 w-4" />{filters.dateRange.from ? (filters.dateRange.to ? (<>{format(filters.dateRange.from, "LLL dd, y", { locale: fr })} - {format(filters.dateRange.to, "LLL dd, y", { locale: fr })}</>) : (format(filters.dateRange.from, "LLL dd, y", { locale: fr }))) : (<span>Période</span>)}</Button></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar initialFocus mode="range" defaultMonth={filters.dateRange?.from} selected={filters.dateRange} onSelect={(range) => handleFilterChange('dateRange', range || {from: null, to: null})} numberOfMonths={2} /></PopoverContent></Popover>
@@ -355,6 +433,13 @@ const ManagementCRAPage = () => {
         </CardContent>
       </Card>
       <CRAPreview isOpen={!!previewCra} onOpenChange={(isOpen) => !isOpen && setPreviewCra(null)} cra={previewCra} />
+      <CreateCRADialog 
+        isOpen={isCreateCRADialogOpen} 
+        onOpenChange={setIsCreateCRADialogOpen} 
+        profiles={profiles} 
+        createCRA={createCRA} 
+        fetchData={fetchData} 
+      />
     </motion.div>
   );
 };
