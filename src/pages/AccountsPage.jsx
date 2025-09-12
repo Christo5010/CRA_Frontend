@@ -158,7 +158,7 @@ const AccountsPage = () => {
     // Create CRA with flags: hide header and hide client signature
     try {
       await createCRA(selectedConsultantId, new Date(selectedMonth), {}, { hide_header: true, hide_client_signature: true });
-      toast({ title: 'CRA créé (entête et signature client masqués).' });
+      toast({ title: "Création d'un CRA caché." });
       setIsCreateCRADialogOpen(false);
       fetchData(true);
     } catch (e) {
@@ -242,7 +242,7 @@ const AccountsPage = () => {
                                 <TableCell>{client.address || 'Non définie'}</TableCell>
                                 <TableCell className="text-right space-x-2">
                                     <Button variant="ghost" size="icon" onClick={() => openClientModal(client)}><Edit className="h-4 w-4" /></Button>
-                                    <Button variant="outline" size="sm" onClick={() => openCreateCRADialog(client)}>Créer CRA (masquer entête et signature client)</Button>
+                                    <Button variant="outline" size="sm" onClick={() => openCreateCRADialog(client)}>Création d'un CRA caché</Button>
                                 </TableCell>
                             </TableRow>
                         ))}
