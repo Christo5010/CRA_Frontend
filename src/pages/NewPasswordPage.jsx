@@ -79,8 +79,8 @@ const NewPasswordPage = () => {
             <Label htmlFor="confirm">Confirmer le mot de passe</Label>
             <Input id="confirm" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
           </div>
-          <Button type="submit" disabled={!canSubmit || submitting} className="w-full">
-            {submitting ? 'En cours...' : 'Créer le mot de passe'}
+          <Button type="submit" disabled={!canSubmit} isLoading={submitting} loadingText="Création..." className="w-full">
+            Créer le mot de passe
           </Button>
         </form>
       </div>

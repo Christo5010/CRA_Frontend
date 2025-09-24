@@ -247,8 +247,8 @@ const DashboardPage = () => {
                         <Button variant="outline" size="sm" onClick={() => setDatePreset('this_quarter')}>Ce trimestre</Button>
                     </div>
                     <div className="flex gap-2">
-                        <Button className="bg-orange-500 hover:bg-orange-600 text-white" onClick={() => handleReminders('all')} disabled={sending}>Relancer — tous les retards</Button>
-                        <Button variant="secondary" onClick={() => handleReminders('selection')} disabled={selectedForReminder.length === 0 || sending}>Relancer la sélection ({selectedForReminder.length})</Button>
+                        <Button className="bg-orange-500 hover:bg-orange-600 text-white" onClick={() => handleReminders('all')} isLoading={sending} loadingText="Envoi...">Relancer — tous les retards</Button>
+                        <Button variant="secondary" onClick={() => handleReminders('selection')} disabled={selectedForReminder.length === 0} isLoading={sending} loadingText="Envoi...">Relancer la sélection ({selectedForReminder.length})</Button>
                     </div>
                 </CardContent>
             </Card>

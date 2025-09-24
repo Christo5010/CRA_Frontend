@@ -129,8 +129,8 @@ const ResetPasswordPage = () => {
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@exemple.com" />
             </div>
-            <Button onClick={handleRequestCode} disabled={requesting || !email} className="w-full">
-              {requesting ? 'Envoi...' : 'Envoyer le code'}
+            <Button onClick={handleRequestCode} disabled={!email} isLoading={requesting} loadingText="Envoi..." className="w-full">
+              Envoyer le code
             </Button>
           </div>
         )}
@@ -142,9 +142,9 @@ const ResetPasswordPage = () => {
               <Input id="code" value={code} onChange={(e) => setCode(e.target.value)} placeholder="123456" />
             </div>
             <div className="flex gap-2">
-              <Button type="submit" className="flex-1" disabled={verifying}>{verifying ? 'Vérification...' : 'Vérifier le code'}</Button>
-              <Button type="button" variant="secondary" onClick={handleResend} disabled={requesting}>
-                {requesting ? 'Renvoi...' : 'Renvoyer'}
+              <Button type="submit" className="flex-1" isLoading={verifying} loadingText="Vérification...">Vérifier le code</Button>
+              <Button type="button" variant="secondary" onClick={handleResend} isLoading={requesting} loadingText="Renvoi...">
+                Renvoyer
               </Button>
             </div>
           </form>
@@ -160,8 +160,8 @@ const ResetPasswordPage = () => {
               <Label htmlFor="confirm">Confirmer le mot de passe</Label>
               <Input id="confirm" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
             </div>
-            <Button type="submit" disabled={!canSubmitPassword || submitting} className="w-full">
-              {submitting ? 'En cours...' : 'Réinitialiser'}
+            <Button type="submit" disabled={!canSubmitPassword} isLoading={submitting} loadingText="En cours..." className="w-full">
+              Réinitialiser
             </Button>
           </form>
         )}

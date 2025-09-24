@@ -124,14 +124,11 @@ const LoginPage = () => {
             <div>
               <Button
                 type="submit"
-                disabled={isSubmitting}
+                isLoading={isSubmitting}
+                loadingText="Connexion..."
                 className="w-full bg-gray-800 hover:bg-gray-900 text-white"
               >
-                {isSubmitting ? (
-                  <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
-                ) : (
-                  <LogIn className="w-4 h-4 mr-2" />
-                )}
+                <LogIn className="w-4 h-4 mr-2" />
                 Se connecter
               </Button>
             </div>

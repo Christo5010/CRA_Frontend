@@ -79,9 +79,14 @@ const AccountsPage = () => {
     setIsCreateCRADialogOpen(true);
   };
 
+  const [savingUser, setSavingUser] = useState(false);
+  const [savingClient, setSavingClient] = useState(false);
+  const [creatingHiddenCRA, setCreatingHiddenCRA] = useState(false);
+
   const handleSaveUser = async () => {
     if (currentUser) {
         try {
+            setSavingUser(true);
             if (currentUser.id) {
                 // Update existing user
                 await apiClient.patch(`/user/${currentUser.id}`, currentUser);
@@ -104,7 +109,7 @@ const AccountsPage = () => {
                 title: "Erreur", 
                 description: error.response?.data?.message || "Erreur lors de la sauvegarde du compte." 
             });
-        }
+        } finally { setSavingUser(false); }
     }
     setIsUserModalOpen(false);
   };
@@ -112,6 +117,7 @@ const AccountsPage = () => {
   const handleSaveClient = async () => {
     if (currentClient) {
         try {
+            setSavingClient(true);
             if (currentClient.id) {
                 // Update existing client
                 await apiClient.patch(`/client/${currentClient.id}`, currentClient);
@@ -129,7 +135,7 @@ const AccountsPage = () => {
                 title: "Erreur", 
                 description: error.response?.data?.message || "Erreur lors de la sauvegarde du client." 
             });
-        }
+        } finally { setSavingClient(false); }
     }
     setIsClientModalOpen(false);
   }
@@ -157,13 +163,14 @@ const AccountsPage = () => {
     }
     // Create CRA with flags: hide header and hide client signature
     try {
+      setCreatingHiddenCRA(true);
       await createCRA(selectedConsultantId, new Date(selectedMonth), {}, { hide_header: true, hide_client_signature: true });
       toast({ title: "Création d'un CRA caché." });
       setIsCreateCRADialogOpen(false);
       fetchData(true);
     } catch (e) {
       // createCRA already toasts on error
-    }
+    } finally { setCreatingHiddenCRA(false); }
   };
 
   return (
@@ -285,7 +292,7 @@ const AccountsPage = () => {
               <Label htmlFor="active">Actif</Label>
             </div>
           </div>
-          <DialogFooter><Button variant="outline" onClick={() => setIsUserModalOpen(false)}>Annuler</Button><Button onClick={handleSaveUser}>Enregistrer</Button></DialogFooter>
+          <DialogFooter><Button variant="outline" onClick={() => setIsUserModalOpen(false)}>Annuler</Button><Button onClick={handleSaveUser} isLoading={savingUser} loadingText={currentUser?.id ? 'Mise à jour...' : 'Création...'}>Enregistrer</Button></DialogFooter>
         </DialogContent>
       </Dialog>
       
@@ -298,7 +305,7 @@ const AccountsPage = () => {
                 <Label htmlFor="clientName">Nom du client</Label><Input id="clientName" value={currentClient?.name || ''} onChange={(e) => setCurrentClient({...currentClient, name: e.target.value})} />
                 <Label htmlFor="clientAddress">Adresse</Label><Input id="clientAddress" value={currentClient?.address || ''} onChange={(e) => setCurrentClient({...currentClient, address: e.target.value})} />
             </div>
-            <DialogFooter><Button variant="outline" onClick={() => setIsClientModalOpen(false)}>Annuler</Button><Button onClick={handleSaveClient}>Enregistrer</Button></DialogFooter>
+            <DialogFooter><Button variant="outline" onClick={() => setIsClientModalOpen(false)}>Annuler</Button><Button onClick={handleSaveClient} isLoading={savingClient} loadingText={currentClient?.id ? 'Mise à jour...' : 'Création...'}>Enregistrer</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -328,7 +335,7 @@ const AccountsPage = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateCRADialogOpen(false)}>Annuler</Button>
-            <Button onClick={handleCreateSpecialCRA}>Créer</Button>
+            <Button onClick={handleCreateSpecialCRA} isLoading={creatingHiddenCRA} loadingText="Création...">Créer</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

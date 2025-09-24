@@ -245,12 +245,12 @@ const AccountSettingsPage = () => {
                   Annuler
                 </Button>
                 {emailStep === 'verify' ? (
-                  <Button onClick={handleVerifyEmail} disabled={loading}>
-                    {loading ? 'Vérification...' : 'Vérifier et sauvegarder'}
+                  <Button onClick={handleVerifyEmail} isLoading={loading} loadingText="Vérification...">
+                    Vérifier et sauvegarder
                   </Button>
                 ) : (
-                  <Button onClick={handleProfileSave} disabled={loading}>
-                    {loading ? 'Sauvegarde...' : 'Sauvegarder'}
+                  <Button onClick={handleProfileSave} isLoading={loading} loadingText="Sauvegarde...">
+                    Sauvegarder
                   </Button>
                 )}
               </>
@@ -319,8 +319,8 @@ const AccountSettingsPage = () => {
                 <Button variant="outline" onClick={handlePasswordCancel}>
                   Annuler
                 </Button>
-                <Button onClick={handlePasswordSave} disabled={loading}>
-                  {loading ? 'Modification...' : 'Modifier le mot de passe'}
+                <Button onClick={handlePasswordSave} isLoading={loading} loadingText="Modification...">
+                  Modifier le mot de passe
                 </Button>
               </div>
             </div>

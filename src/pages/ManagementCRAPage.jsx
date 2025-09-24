@@ -37,13 +37,14 @@ const StatusBadge = ({ status }) => {
 
 const ReviseDialog = ({ cra, onConfirm }) => {
     const [reason, setReason] = useState('');
+    const [loading, setLoading] = useState(false);
     return (
         <Dialog>
             <DialogTrigger asChild><Button variant="secondary" size="sm">À réviser</Button></DialogTrigger>
             <DialogContent>
                 <DialogHeader><DialogTitle>Renvoyer le CRA pour révision</DialogTitle><DialogDescription>Veuillez indiquer le motif de la révision pour le consultant {cra.consultantName}.</DialogDescription></DialogHeader>
                 <Textarea placeholder="Ex: Il manque la journée du 15, merci de corriger." value={reason} onChange={(e) => setReason(e.target.value)} />
-                <DialogFooter><DialogClose asChild><Button variant="outline">Annuler</Button></DialogClose><DialogClose asChild><Button onClick={() => onConfirm(reason)} disabled={!reason.trim()}>Confirmer</Button></DialogClose></DialogFooter>
+                <DialogFooter><DialogClose asChild><Button variant="outline">Annuler</Button></DialogClose><Button onClick={async () => { if(!reason.trim()) return; setLoading(true); await onConfirm(reason); setLoading(false); }} isLoading={loading} loadingText="Envoi..." disabled={!reason.trim()}>Confirmer</Button></DialogFooter>
             </DialogContent>
         </Dialog>
     )
@@ -53,6 +54,7 @@ const CreateCRADialog = ({ isOpen, onOpenChange, profiles, createCRA, fetchData 
     const [selectedConsultantId, setSelectedConsultantId] = useState('');
     const [selectedMonth, setSelectedMonth] = useState('');
     const { toast } = useToast();
+    const [creating, setCreating] = useState(false);
 
     const handleCreateCRA = async () => {
         if (!selectedConsultantId || !selectedMonth) {
@@ -61,6 +63,7 @@ const CreateCRADialog = ({ isOpen, onOpenChange, profiles, createCRA, fetchData 
         }
         
         try {
+            setCreating(true);
             await createCRA(selectedConsultantId, new Date(selectedMonth), {}, { hide_header: true, hide_client_signature: true });
             toast({ title: "CRA créé sans en-tête et signature." });
             onOpenChange(false);
@@ -69,7 +72,7 @@ const CreateCRADialog = ({ isOpen, onOpenChange, profiles, createCRA, fetchData 
             fetchData(true);
         } catch (e) {
             // createCRA already toasts on error
-        }
+        } finally { setCreating(false); }
     };
 
     return (
@@ -110,7 +113,7 @@ const CreateCRADialog = ({ isOpen, onOpenChange, profiles, createCRA, fetchData 
                     <DialogClose asChild>
                         <Button variant="outline">Annuler</Button>
                     </DialogClose>
-                    <Button onClick={handleCreateCRA} disabled={!selectedConsultantId || !selectedMonth}>
+                    <Button onClick={handleCreateCRA} disabled={!selectedConsultantId || !selectedMonth} isLoading={creating} loadingText="Création...">
                         Créer le CRA
                     </Button>
                 </DialogFooter>
