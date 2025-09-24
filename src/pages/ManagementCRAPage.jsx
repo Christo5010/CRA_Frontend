@@ -368,7 +368,7 @@ const ManagementCRAPage = () => {
                   <Select value={filters.client} onValueChange={(v) => handleFilterChange('client', v)}><SelectTrigger className="w-full sm:w-[180px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Tous">Client (Tous)</SelectItem>{clients.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}</SelectContent></Select>
                   <Select value={filters.status} onValueChange={(v) => handleFilterChange('status', v)}><SelectTrigger className="w-full sm:w-[180px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Tous">Statut (Tous)</SelectItem><SelectItem value="Non créé">Non créé</SelectItem><SelectItem value="Brouillon">Brouillon</SelectItem><SelectItem value="À réviser">À réviser</SelectItem><SelectItem value="Soumis">Soumis</SelectItem><SelectItem value="Validé">Validé</SelectItem><SelectItem value="Signature demandée">Signature demandée</SelectItem><SelectItem value="Signé">Signé</SelectItem></SelectContent></Select>
                   <Input placeholder="Recherche..." className="w-full sm:w-[240px]" value={filters.searchTerm} onChange={e => handleFilterChange('searchTerm', e.target.value)} />
-                  {(profile?.role === 'admin' || profile?.role === 'Admin') && <ActionLogDialog />}
+                  {(profile && ['admin','manager'].includes(String(profile.role).toLowerCase())) && <ActionLogDialog />}
                   {(profile?.role === 'manager' || profile?.role === 'Manager' || profile?.role === 'admin' || profile?.role === 'Admin') && (
                     <Button onClick={() => setIsCreateCRADialogOpen(true)}>
                       <PlusCircle className="w-4 h-4 mr-2" />

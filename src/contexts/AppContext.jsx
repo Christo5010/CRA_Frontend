@@ -98,10 +98,10 @@ export const AppProvider = ({ children }) => {
         setDataFetched(true);
 
         try {
-            // Fetch all users/profiles if user is admin
+            // Fetch all users/profiles if user is admin or manager (to align manager/admin views)
             let allProfiles = [user]; // Start with current user
             
-            if (user.role === 'admin') {
+            if (user.role === 'admin' || user.role === 'manager') {
                 try {
                     const response = await apiClient.get('/user/all');
                     console.debug('[AppContext] /user/all response', response.data);
@@ -173,26 +173,7 @@ export const AppProvider = ({ children }) => {
                             } else {
                                 setCras(dashboardCRAs);
                             }
-
-                            // Derive consultant profiles from CRAs for manager view
-                            const source = (dashboardCRAs.length > 0) ? dashboardCRAs : [];
-                            const derivedProfilesMap = new Map();
-                            source.forEach((c) => {
-                                const p = c.profiles; // embedded profile of user_id
-                                if (p && p.id) {
-                                    derivedProfilesMap.set(p.id, {
-                                        id: p.id,
-                                        name: p.name,
-                                        email: p.email,
-                                        role: (p.role || 'consultant').toLowerCase(),
-                                        clients: p.clients || null,
-                                    });
-                                }
-                            });
-                            const derivedProfiles = Array.from(derivedProfilesMap.values());
-                            if (derivedProfiles.length > 0) {
-                                setProfiles(derivedProfiles);
-                            }
+                            // Do NOT override profiles for manager; keep full list fetched above
                         } else {
                             setCras([]);
                         }
