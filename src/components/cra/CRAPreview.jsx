@@ -130,7 +130,7 @@ const CRAPreview = ({ isOpen, onOpenChange, cra, onPdfGenerated }) => {
           <div class="cra-header avoid-break">
             <div>
               <h1>Seven Opportunity</h1>
-              <p>123 Rue de l'Exemple, 75001 Paris</p>
+              <p>101 Rue de Paris, 77200 Torcy</p>
             </div>
             <div class="cra-logo"><img src="${logoUrl}" alt="Seven Opportunity" /></div>
           </div>
@@ -254,7 +254,7 @@ const CRAPreview = ({ isOpen, onOpenChange, cra, onPdfGenerated }) => {
                 <header className="flex justify-between items-center pb-4 border-b-2 border-gray-800">
                     <div>
                         <h1 className="text-3xl font-bold text-gray-800">Seven Opportunity</h1>
-                        <p className="text-gray-600">123 Rue de l'Exemple, 75001 Paris</p>
+                        <p className="text-gray-600">101 Rue de Paris, 77200 Torcy</p>
                     </div>
                     <div className="w-24 h-24 bg-gray-200 flex items-center justify-center">
                        <img src={sevenLogo} alt="Seven Opportunity" className="max-h-24 w-auto object-contain" />

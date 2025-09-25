@@ -98,7 +98,7 @@ const DashboardPage = () => {
         setSelectedForReminder([]);
     };
     
-    const { consultantsCount, aRelancer, soumis, valides, signes, consultantsToRemind } = useMemo(() => {
+    const { consultantsCount, aRelancer, soumis, valides, signes, consultantsToRemind,filteredCRAs } = useMemo(() => {
         const consultantsInPeriod = profiles.filter(p => p.role === 'consultant');
         let allCRAsForPeriod = [];
         const start = filters.dateRange.from || new Date('2000-01-01');
@@ -160,6 +160,7 @@ const DashboardPage = () => {
             valides: allCRAsForPeriod.filter(cra => cra.status === 'Validé').length,
             signes: allCRAsForPeriod.filter(cra => cra.status === 'Signé').length,
             consultantsToRemind: toRemind,
+            filteredCRAs: filtered,
         };
     }, [cras, profiles, filters]);
 
@@ -280,7 +281,7 @@ const DashboardPage = () => {
                                 <TableHead>Statut</TableHead>
                                 <TableHead>Total (J)</TableHead>
                                 <TableHead className="text-right">
-                                    <div className="flex items-center justify-end gap-2">
+                                    <div className="flex items-center justify-end gap-2 mr-3">
                                         <span>Relancer</span>
                                         <Checkbox
                                             checked={
@@ -297,7 +298,7 @@ const DashboardPage = () => {
                                 </TableHead>
                             </TableRow>
                         </TableHeader>
-                        <TableBody>
+                        {/* <TableBody>
                             {consultantsToRemind.length > 0 ? (
                                 consultantsToRemind.map((cra) => (
                                     <TableRow key={cra.id} className="table-row-hover">
@@ -318,6 +319,33 @@ const DashboardPage = () => {
                                     <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">Aucun consultant à relancer pour les filtres sélectionnés.</TableCell>
                                 </TableRow>
                             )}
+                        </TableBody> */}
+                        <TableBody>
+                        {filteredCRAs.length > 0 ? (
+                            filteredCRAs.map((cra) => (
+                            <TableRow key={cra.id} className="table-row-hover">
+                                <TableCell className="font-medium">{cra.consultantName}</TableCell>
+                                <TableCell className="capitalize">{format(cra.month, 'MMMM yyyy', { locale: fr })}</TableCell>
+                                <TableCell><StatusBadge status={cra.status} /></TableCell>
+                                <TableCell>{cra.totalDays.toFixed(1)}</TableCell>
+                                <TableCell className="text-right">
+                                {['Brouillon', 'Non créé', 'À réviser'].includes(cra.status) ? (
+                                    <Checkbox
+                                    className='mr-3'
+                                    checked={selectedForReminder.includes(cra.id)}
+                                    onCheckedChange={(checked) => handleSelectForReminder(cra.id, !!checked)}
+                                    />
+                                ) : null}
+                                </TableCell>
+                            </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                            <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                                Aucun CRA trouvé pour les filtres sélectionnés.
+                            </TableCell>
+                            </TableRow>
+                        )}
                         </TableBody>
                     </Table>
                 </CardContent>
