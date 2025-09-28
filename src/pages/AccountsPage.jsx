@@ -25,7 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { PlusCircle, Edit, Trash2 } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Copy, Check } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { formatISO, startOfMonth } from 'date-fns';
 
@@ -52,6 +52,12 @@ const AccountsPage = () => {
   const [createTargetClient, setCreateTargetClient] = useState(null);
   const [selectedConsultantId, setSelectedConsultantId] = useState("");
   const [selectedMonth, setSelectedMonth] = useState(() => formatISO(startOfMonth(new Date()), { representation: 'date' }));
+
+  // Dialog for invitation link
+  const [isInvitationLinkDialogOpen, setIsInvitationLinkDialogOpen] = useState(false);
+  const [invitationLink, setInvitationLink] = useState("");
+  const [createdUserEmail, setCreatedUserEmail] = useState("");
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const openUserModal = (user = null) => {
     const userData = user ? 
@@ -99,7 +105,15 @@ const AccountsPage = () => {
                   role: currentUser.role,
                   client_id: currentUser.client_id || null
                 };
-                await apiClient.post('/user/create', payload);
+                const response = await apiClient.post('/user/create', payload);
+                
+                // Show invitation link modal for new users
+                if (response.data?.data?.invitationLink) {
+                  setInvitationLink(response.data.data.invitationLink);
+                  setCreatedUserEmail(currentUser.email);
+                  setIsInvitationLinkDialogOpen(true);
+                }
+                
                 toast({ title: "Compte créé. Une invitation a été envoyée par email." });
             }
             fetchData(true);
@@ -171,6 +185,21 @@ const AccountsPage = () => {
     } catch (e) {
       // createCRA already toasts on error
     } finally { setCreatingHiddenCRA(false); }
+  };
+
+  const handleCopyInvitationLink = async () => {
+    try {
+      await navigator.clipboard.writeText(invitationLink);
+      setLinkCopied(true);
+      toast({ title: "Lien copié dans le presse-papiers" });
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch (err) {
+      toast({ 
+        variant: "destructive", 
+        title: "Erreur", 
+        description: "Impossible de copier le lien" 
+      });
+    }
   };
 
   return (
@@ -336,6 +365,55 @@ const AccountsPage = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateCRADialogOpen(false)}>Annuler</Button>
             <Button onClick={handleCreateSpecialCRA} isLoading={creatingHiddenCRA} loadingText="Création...">Créer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Invitation Link Modal */}
+      <Dialog open={isInvitationLinkDialogOpen} onOpenChange={setIsInvitationLinkDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Lien d'invitation créé</DialogTitle>
+            <DialogDescription>
+              Un email a été envoyé à <strong>{createdUserEmail}</strong>. 
+              Vous pouvez également copier ce lien pour le partager manuellement si nécessaire.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="invitation-link">Lien d'invitation</Label>
+              <div className="flex items-center space-x-2">
+                <Input 
+                  id="invitation-link" 
+                  value={invitationLink} 
+                  readOnly 
+                  className="flex-1"
+                />
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={handleCopyInvitationLink}
+                  className="shrink-0"
+                >
+                  {linkCopied ? (
+                    <Check className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-sm text-blue-800">
+                <strong>Note :</strong> Ce lien permet à l'utilisateur de définir son mot de passe. 
+                Il expire dans 48 heures.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setIsInvitationLinkDialogOpen(false)}>
+              Fermer
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
