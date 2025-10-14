@@ -28,7 +28,10 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
     } else {
       setCraSubMenuOpen(false);
     }
-     if (location.pathname.startsWith('/mes-documents')) {
+     if (
+      location.pathname.startsWith('/mes-documents') ||
+      location.pathname.startsWith('/mes-absences')
+    ){
       setDocsSubMenuOpen(true);
     } else {
       setDocsSubMenuOpen(false);
@@ -137,6 +140,12 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
                       Mes CRA
                     </NavLink>
                   </li>
+                  <li>
+                    <NavLink to="/mes-absences" className={subNavLinkClass}>
+                      <Calendar className="w-4 h-4 mr-3" />
+                      Mes absences
+                    </NavLink>
+                  </li>
                 </ul>
               )}
             </li>
@@ -147,6 +156,14 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
               <NavLink to="/accounts" className={navLinkClass}>
                 <Users className="w-5 h-5 mr-3" />
                 Comptes
+              </NavLink>
+            </li>
+          )}
+          {isManagerOrAdmin && (
+            <li>
+              <NavLink to="/gestion-absences" className={navLinkClass}>
+                <Calendar className="w-5 h-5 mr-3" />
+                Gestion des absences
               </NavLink>
             </li>
           )}

@@ -20,7 +20,13 @@ const LoginPage = () => {
 
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
-      navigate('/mon-cra', { replace: true });
+      const redirect = localStorage.getItem('postLoginRedirect');
+      if (redirect) {
+        localStorage.removeItem('postLoginRedirect');
+        navigate(redirect, { replace: true });
+      } else {
+        navigate('/mon-cra', { replace: true });
+      }
     }
   }, [isAuthenticated, authLoading, navigate]);
 

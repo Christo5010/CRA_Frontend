@@ -1,5 +1,6 @@
 
 import React, {useEffect, useState, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, Lock, Trash2, Send, Edit, Eye, PenSquare, AlertTriangle } from 'lucide-react';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isToday, isWeekend, getYear } from 'date-fns';
@@ -45,7 +46,7 @@ const DayStatusIndicator = ({ status }) => {
 
 const CRAPage = () => {
   const { user } = useAuth();
-  const { clients, cras, createCRA, updateCRA, loading } = useAppData();
+  const { clients, cras, createCRA, updateCRA, loading, approvedAbsences, fetchApprovedAbsencesForMonth } = useAppData();
   const { toast } = useToast();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [holidayConfirmation, setHolidayConfirmation] = useState({ isOpen: false, day: null });
@@ -54,6 +55,7 @@ const CRAPage = () => {
   const [sigRef, setSigRef] = useState(null);
   const [comment, setComment] = useState("");
   const [sigEmpty, setSigEmpty] = useState(true);
+  const location = useLocation();
 
   const getCRAForMonth = (userId, date) => {
     const found = cras.find(cra => {
@@ -83,6 +85,32 @@ const CRAPage = () => {
     const endDate = endOfWeek(monthEnd, { weekStartsOn: 1 });
     return eachDayOfInterval({ start: startDate, end: endDate });
   }, [currentMonth]);
+  // Fetch approved absences for current month to gray out days
+  useEffect(() => {
+    if (!user) return;
+    const monthStr = format(startOfMonth(currentMonth), 'yyyy-MM');
+    fetchApprovedAbsencesForMonth(user.id, monthStr);
+  }, [user, currentMonth, fetchApprovedAbsencesForMonth]);
+
+  const approvedAbsenceDates = useMemo(() => {
+    // Build a set of ISO dates within current month that are approved absences
+    const set = new Set();
+    const monthStart = startOfMonth(currentMonth);
+    const monthEnd = endOfMonth(currentMonth);
+    (approvedAbsences || []).forEach(abs => {
+      if (!abs.start_date || !abs.end_date) return;
+      const start = new Date(abs.start_date);
+      const end = new Date(abs.end_date);
+      const rangeStart = start < monthStart ? monthStart : start;
+      const rangeEnd = end > monthEnd ? monthEnd : end;
+      try {
+        const days = eachDayOfInterval({ start: rangeStart, end: rangeEnd });
+        days.forEach(d => set.add(format(d, 'yyyy-MM-dd')));
+      } catch (_) {}
+    });
+    return set;
+  }, [approvedAbsences, currentMonth]);
+
 
   const workingDaysInMonth = useMemo(() => {
     const monthStart = startOfMonth(currentMonth);
@@ -198,6 +226,17 @@ const CRAPage = () => {
     setIsSignDialogOpen(false);
   }
 
+  // Auto-open signature when coming from secure link intent
+  useEffect(() => {
+    const intentCraId = localStorage.getItem('openSignForCraId');
+    if (intentCraId && craData && String(craData.id) === String(intentCraId)) {
+      if (craData.status === 'Signature demandée') {
+        setIsSignDialogOpen(true);
+      }
+      localStorage.removeItem('openSignForCraId');
+    }
+  }, [craData, location.key]);
+
   const [signatureText, setSignatureText] = useState(craData?.signature_text || "");
   useEffect(() => {
     setSignatureText(craData?.signature_text || "");
@@ -305,6 +344,8 @@ const CRAPage = () => {
             
             const cellBg = () => {
                 if (!isCurrentMonth) return '';
+                const dayIso = format(day, 'yyyy-MM-dd');
+                if (approvedAbsenceDates.has(dayIso)) return 'bg-gray-200';
                 if(dayData?.status === 'worked_1') return 'bg-green-100';
                 if(dayData?.status === 'worked_0_5') return 'bg-blue-100';
                 if(dayData?.status === 'off') return 'bg-red-100';

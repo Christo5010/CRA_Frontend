@@ -220,6 +220,7 @@ const ActionLogDialog = () => {
 
 const ManagementCRAPage = () => {
   const { cras, profiles, clients, updateCRA, deleteCRA, createCRA, fetchData, profile } = useAppData();
+  const [sendingLinks, setSendingLinks] = useState(false);
   const { toast } = useToast();
   const [filters, setFilters] = useState({ searchTerm: '', consultant: 'Tous', client: 'Tous', status: 'Tous', dateRange: { from: startOfMonth(new Date()), to: endOfMonth(new Date()) } });
   const [previewCra, setPreviewCra] = useState(null);
@@ -386,6 +387,22 @@ const ManagementCRAPage = () => {
                 <Button variant="outline" size="sm" onClick={() => setDatePreset('this_quarter')}>Ce trimestre</Button>
                 <Button variant="ghost" onClick={resetFilters}>Réinitialiser</Button>
                 <span className="text-sm font-medium text-muted-foreground ml-auto">Total: {allCRAsForDisplay.length}</span>
+                {(['manager','admin'].includes(String(profile?.role).toLowerCase())) && (
+                  <Button variant="secondary" isLoading={sendingLinks} onClick={async () => {
+                    setSendingLinks(true);
+                    try {
+                      const rows = allCRAsForDisplay.filter(c => c.status === 'Signature demandée').map(c => ({ user_id: c.user_id, month: format(startOfMonth(c.month), 'yyyy-MM-dd') }));
+                      const resp = await (await import('@/lib/apiClient')).default.post('/automation/cra-signature-reminders', { rows });
+                      if (resp.data.success) {
+                        const sent = resp.data.data?.sent || 0; 
+                        const total = resp.data.data?.total || 0;
+                        toast({ title: 'Rappels envoyés', description: `${sent}/${total} emails envoyés.` });
+                      }
+                    } catch (e) {
+                      toast({ variant: 'destructive', title: 'Échec envoi rappels' });
+                    } finally { setSendingLinks(false); }
+                  }}>Relancer signatures</Button>
+                )}
               </div>
           </CardContent>
       </Card>

@@ -12,6 +12,9 @@ import AccountSettingsPage from '@/pages/AccountSettingsPage';
 import { useAuth } from '@/contexts/AuthContext';
 import ResetPasswordPage from '@/pages/ResetPasswordPage';
 import NewPasswordPage from '@/pages/NewPasswordPage';
+import SignatureLinkPage from '@/pages/SignatureLinkPage';
+import MyAbsencesPage from '@/pages/MyAbsencesPage';
+import AbsenceManagementPage from '@/pages/AbsenceManagementPage';
 
 const PrivateRoute = ({ children, roles }) => {
   const { isAuthenticated, user, loading } = useAuth();
@@ -73,6 +76,15 @@ const AppRoutes = () => {
             <Route 
                 path="/mon-cra" 
                 element={<PrivateRoute roles={['consultant', 'manager', 'admin']}><AppLayout><CRAPage /></AppLayout></PrivateRoute>} 
+            />
+            <Route path="/cra/sign" element={<SignatureLinkPage />} />
+            <Route 
+                path="/mes-absences"
+                element={<PrivateRoute roles={['consultant']}><AppLayout><MyAbsencesPage /></AppLayout></PrivateRoute>}
+            />
+            <Route 
+                path="/gestion-absences"
+                element={<PrivateRoute roles={['manager', 'admin']}><AppLayout><AbsenceManagementPage /></AppLayout></PrivateRoute>}
             />
             <Route 
                 path="/cra" 

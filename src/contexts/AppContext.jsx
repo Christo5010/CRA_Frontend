@@ -72,6 +72,8 @@ export const AppProvider = ({ children }) => {
     const [cras, setCras] = useState([]);
     const [actionLogs, setActionLogs] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [myAbsences, setMyAbsences] = useState([]);
+    const [approvedAbsences, setApprovedAbsences] = useState([]);
     const [dataFetched, setDataFetched] = useState(false);
 
     const fetchData = useCallback(async (forceRefresh = false) => {
@@ -193,6 +195,12 @@ export const AppProvider = ({ children }) => {
                 setCras([]);
             }
             
+            // Fetch absences
+            try {
+                const myAbs = await apiClient.get('/absences/me');
+                if (myAbs.data.success) setMyAbsences(myAbs.data.data || []);
+            } catch (_) { setMyAbsences([]); }
+
             // Fetch action logs if user is admin or manager
             if (user.role === 'admin' || user.role === 'manager') {
                 try {
@@ -312,6 +320,61 @@ export const AppProvider = ({ children }) => {
         }
     };
 
+    // Absences API
+    const requestAbsence = async ({ start_date, end_date, type, reason }) => {
+        try {
+            const resp = await apiClient.post('/absences/me', { start_date, end_date, type, reason });
+            if (resp.data.success) {
+                setMyAbsences((prev) => [resp.data.data, ...prev]);
+                toast({ title: "Demande d'absence créée." });
+                return { success: true };
+            }
+            return { success: false, error: resp.data.message };
+        } catch (error) {
+            return { success: false, error: error.response?.data?.message || 'Échec de la demande' };
+        }
+    };
+
+    const refreshMyAbsences = async () => {
+        try {
+            const resp = await apiClient.get('/absences/me');
+            if (resp.data.success) setMyAbsences(resp.data.data || []);
+        } catch (_) {}
+    };
+
+    const fetchApprovedAbsencesForMonth = async (userId, month) => {
+        try {
+            const resp = await apiClient.get(`/absences/approved/${userId}?month=${encodeURIComponent(month)}`);
+            if (resp.data.success) setApprovedAbsences(resp.data.data || []);
+        } catch (_) { setApprovedAbsences([]); }
+    };
+
+    const listAllAbsences = async ({ status, user_id } = {}) => {
+        try {
+            const qs = new URLSearchParams();
+            if (status) qs.set('status', status);
+            if (user_id) qs.set('user_id', user_id);
+            const resp = await apiClient.get(`/absences?${qs.toString()}`);
+            if (resp.data.success) return { success: true, data: resp.data.data };
+            return { success: false, error: resp.data.message };
+        } catch (error) {
+            return { success: false, error: error.response?.data?.message || 'Échec du chargement des absences' };
+        }
+    };
+
+    const decideAbsence = async (absenceId, action, comment) => {
+        try {
+            const resp = await apiClient.post(`/absences/${absenceId}/decision`, { action, comment });
+            if (resp.data.success) {
+                toast({ title: 'Décision enregistrée.' });
+                return { success: true, data: resp.data.data };
+            }
+            return { success: false, error: resp.data.message };
+        } catch (error) {
+            return { success: false, error: error.response?.data?.message || 'Échec de la mise à jour' };
+        }
+    };
+
     const value = useMemo(() => ({
         clients,
         profiles,
@@ -324,7 +387,14 @@ export const AppProvider = ({ children }) => {
         createCRA,
         deleteCRA,
         profile: user,
-    }), [clients, profiles, cras, actionLogs, loading, fetchData, logAction, user]);
+        myAbsences,
+        approvedAbsences,
+        requestAbsence,
+        refreshMyAbsences,
+        fetchApprovedAbsencesForMonth,
+        listAllAbsences,
+        decideAbsence,
+    }), [clients, profiles, cras, actionLogs, loading, fetchData, logAction, user, myAbsences, approvedAbsences]);
 
     return (
         <AppContext.Provider value={value}>
