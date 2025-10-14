@@ -15,53 +15,6 @@ export const useAppData = () => {
     return context;
 }
 
-// Generate mock CRA data for demonstration
-const generateMockCRAData = (profiles) => {
-    const consultants = profiles.filter(p => p.role === 'consultant');
-    const mockCRAs = [];
-    
-    // Generate CRA data for the last 3 months for each consultant
-    for (let i = 0; i < 3; i++) {
-        const month = new Date();
-        month.setMonth(month.getMonth() - i);
-        
-        consultants.forEach(consultant => {
-            const statuses = ['Brouillon', 'Soumis', 'Validé', 'Signé'];
-            const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
-            
-            // Generate random days data
-            const days = {};
-            const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
-            
-            for (let day = 1; day <= daysInMonth; day++) {
-                const dayDate = new Date(month.getFullYear(), month.getMonth(), day);
-                const dayOfWeek = dayDate.getDay();
-                
-                // Skip weekends
-                if (dayOfWeek === 0 || dayOfWeek === 6) {
-                    days[day] = { status: 'weekend' };
-                } else {
-                    // Random work status
-                    const workStatuses = ['worked_1', 'worked_0_5', 'holiday', 'sick'];
-                    const randomWorkStatus = workStatuses[Math.floor(Math.random() * workStatuses.length)];
-                    days[day] = { status: randomWorkStatus };
-                }
-            }
-            
-            mockCRAs.push({
-                id: `mock-${consultant.id}-${month.getFullYear()}-${month.getMonth() + 1}`,
-                user_id: consultant.id,
-                month: month,
-                status: randomStatus,
-                days: days,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            });
-        });
-    }
-    
-    return mockCRAs;
-};
 
 export const AppProvider = ({ children }) => {
     const { user, isAuthenticated, loading: authLoading } = useAuth();
@@ -77,7 +30,6 @@ export const AppProvider = ({ children }) => {
     const [dataFetched, setDataFetched] = useState(false);
 
     const fetchData = useCallback(async (forceRefresh = false) => {
-        console.debug('[AppContext] fetchData called', { forceRefresh, isAuthenticated, hasUser: !!user });
         if (!isAuthenticated || !user) {
             setLoading(false);
             setClients([]);
@@ -89,7 +41,6 @@ export const AppProvider = ({ children }) => {
         };
 
         if (dataFetched && !forceRefresh) {
-            console.debug('[AppContext] fetchData skipped (cached)');
             return;
         }
 
@@ -106,7 +57,6 @@ export const AppProvider = ({ children }) => {
             if (user.role === 'admin' || user.role === 'manager') {
                 try {
                     const response = await apiClient.get('/user/all');
-                    console.debug('[AppContext] /user/all response', response.data);
                     if (response.data.success) {
                         allProfiles = response.data.data;
                     }
@@ -120,7 +70,6 @@ export const AppProvider = ({ children }) => {
             if (user.role === 'admin' || user.role === 'manager') {
                 try {
                     const clientsResponse = await apiClient.get('/client');
-                    console.debug('[AppContext] /client response', clientsResponse.data);
                     if (clientsResponse.data.success) {
                         setClients(clientsResponse.data.data);
                     }
@@ -130,7 +79,6 @@ export const AppProvider = ({ children }) => {
                 // Consultants can fetch their assigned client
                 try {
                     const clientResponse = await apiClient.get('/client/my-client');
-                    console.debug('[AppContext] /client/my-client response', clientResponse.data);
                     if (clientResponse.data.success && clientResponse.data.data) {
                         setClients([clientResponse.data.data]);
                     } else {
@@ -148,7 +96,6 @@ export const AppProvider = ({ children }) => {
                 if (user.role === 'admin') {
                     // Admin gets all CRAs
                     const crasResponse = await apiClient.get('/cra/all');
-                    console.debug('[AppContext] /cra/all response', crasResponse.data);
                     if (crasResponse.data.success) {
                         setCras(crasResponse.data.data);
                     }
@@ -156,14 +103,12 @@ export const AppProvider = ({ children }) => {
                     // Manager gets dashboard CRAs
                     try {
                         const crasResponse = await apiClient.get('/cra/dashboard');
-                        console.debug('[AppContext] /cra/dashboard response', crasResponse.data);
                         if (crasResponse.data.success) {
                             const dashboardCRAs = crasResponse.data.data || [];
                             // Fallback: if dashboard returns empty, try admin-all to avoid empty screens (will 403 for non-admin)
                             if (dashboardCRAs.length === 0) {
                                 try {
                                     const allResp = await apiClient.get('/cra/all');
-                                    console.debug('[AppContext] fallback /cra/all response', allResp.data);
                                     if (allResp.data.success) {
                                         setCras(allResp.data.data);
                                     } else {
@@ -185,7 +130,6 @@ export const AppProvider = ({ children }) => {
                 } else {
                     // Consultant gets their own CRAs
                     const crasResponse = await apiClient.get(`/cra/user/${user.id}`);
-                    console.debug('[AppContext] /cra/user response', crasResponse.data);
                     if (crasResponse.data.success) {
                         setCras(crasResponse.data.data);
                     }
@@ -205,7 +149,6 @@ export const AppProvider = ({ children }) => {
             if (user.role === 'admin' || user.role === 'manager') {
                 try {
                     const logsResponse = await apiClient.get('/action-log/dashboard');
-                    console.debug('[AppContext] /action-log/dashboard response', logsResponse.data);
                     if (logsResponse.data.success) {
                         setActionLogs(logsResponse.data.data.logs || []);
                     }
@@ -255,7 +198,6 @@ export const AppProvider = ({ children }) => {
     }, [user]);
     
     const updateCRA = async (craId, updates) => {
-        console.debug('[AppContext] updateCRA', { craId, updates });
         // Optimistic update
         const previousCras = cras;
         const optimisticUpdatedAt = new Date().toISOString();
@@ -263,7 +205,6 @@ export const AppProvider = ({ children }) => {
 
         try {
             const response = await apiClient.patch(`/cra/${craId}`, updates);
-            console.debug('[AppContext] updateCRA response', response.data);
             if (response.data.success) {
                 const updated = response.data.data;
                 setCras((prev) => prev.map((c) => c.id === craId ? updated : c));
@@ -290,9 +231,7 @@ export const AppProvider = ({ children }) => {
                 ...(options.hide_header !== undefined ? { hide_header: !!options.hide_header } : {}),
                 ...(options.hide_client_signature !== undefined ? { hide_client_signature: !!options.hide_client_signature } : {}),
             };
-            console.debug('[AppContext] createCRA payload', craData);
             const response = await apiClient.post('/cra', craData);
-            console.debug('[AppContext] createCRA response', response.data);
             if (response.data.success) {
                 const created = response.data.data;
                 setCras((prev) => [...prev, created]);
@@ -305,10 +244,8 @@ export const AppProvider = ({ children }) => {
     };
 
     const deleteCRA = async (craId) => {
-        console.debug('[AppContext] deleteCRA', { craId });
         try {
             const response = await apiClient.delete(`/cra/${craId}`);
-            console.debug('[AppContext] deleteCRA response', response.data);
             if (response.data.success) {
                 toast({ title: "CRA supprimé." });
                 await logAction('Suppression CRA', { craId });

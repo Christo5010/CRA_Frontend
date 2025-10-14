@@ -13,8 +13,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import ResetPasswordPage from '@/pages/ResetPasswordPage';
 import NewPasswordPage from '@/pages/NewPasswordPage';
 import SignatureLinkPage from '@/pages/SignatureLinkPage';
-import MyAbsencesPage from '@/pages/MyAbsencesPage';
-import AbsenceManagementPage from '@/pages/AbsenceManagementPage';
+import AbsencesPage from './pages/AbsencesPage';
+import CongesPage from './pages/CongesPage';
+import HistoryPage from './pages/HistoryPage';
+import ManagementAbsencesPage from './pages/ManagementAbsencesPage';
+import ManagementCongesPage from './pages/ManagementCongesPage';
 
 const PrivateRoute = ({ children, roles }) => {
   const { isAuthenticated, user, loading } = useAuth();
@@ -80,11 +83,23 @@ const AppRoutes = () => {
             <Route path="/cra/sign" element={<SignatureLinkPage />} />
             <Route 
                 path="/mes-absences"
-                element={<PrivateRoute roles={['consultant']}><AppLayout><MyAbsencesPage /></AppLayout></PrivateRoute>}
+                element={<PrivateRoute roles={['consultant', 'manager', 'admin']}><AppLayout><AbsencesPage /></AppLayout></PrivateRoute>}
+            />
+            <Route 
+                path="/mes-conges"
+                element={<PrivateRoute roles={['consultant', 'manager', 'admin']}><AppLayout><CongesPage /></AppLayout></PrivateRoute>}
+            />
+            <Route 
+                path="/history"
+                element={<PrivateRoute roles={['consultant', 'manager', 'admin']}><AppLayout><HistoryPage /></AppLayout></PrivateRoute>}
             />
             <Route 
                 path="/gestion-absences"
-                element={<PrivateRoute roles={['manager', 'admin']}><AppLayout><AbsenceManagementPage /></AppLayout></PrivateRoute>}
+                element={<PrivateRoute roles={['manager', 'admin']}><AppLayout><ManagementAbsencesPage/></AppLayout></PrivateRoute>}
+            />
+            <Route 
+                path="/gestion-conges"
+                element={<PrivateRoute roles={['manager', 'admin']}><AppLayout><ManagementCongesPage/></AppLayout></PrivateRoute>}
             />
             <Route 
                 path="/cra" 
