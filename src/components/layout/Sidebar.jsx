@@ -89,12 +89,17 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
                 <div className="fixed inset-0 z-30 md:hidden">
                     <div className="absolute inset-0 bg-black/50" onClick={onClose} />
                     <aside className="absolute left-0 top-0 bottom-0 w-64 bg-gray-800 text-white flex flex-col shadow-xl">
-                        <div className="p-6 text-center border-b border-gray-700">
+                        {/* <div className="p-6 text-center border-b border-gray-700">
                             <div className="w-12 h-12 bg-gray-700 rounded-full mx-auto mb-2 flex items-center justify-center">
                                 <span className="text-2xl font-bold">7</span>
                             </div>
                             <h2 className="text-xl font-semibold">Seven</h2>
                             <p className="text-sm text-gray-400">Opportunity</p>
+                        </div> */}
+                        <div className="p-6 flex items-center space-x-3 border-b border-gray-700">
+                          <div className="w-48 h-16">
+                            <img src={logo} alt="logo" className="filter invert brightness-0" />
+                          </div>
                         </div>
                         <nav className="flex-1 px-4 py-6 space-y-2">
                             {filteredNavItems.map((item) => (
