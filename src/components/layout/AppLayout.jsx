@@ -1,11 +1,21 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '@/components/layout/Sidebar';
 import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
 import logo from '../../assets/logo.png'
+import { useLocation } from 'react-router-dom';
+import { useAppData } from '@/contexts/AppContext';
 const AppLayout = ({ children }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
+  const { fetchData } = useAppData();
+
+  // Force-refresh shared data on section (route) change
+  useEffect(() => {
+    fetchData(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
       <Sidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />

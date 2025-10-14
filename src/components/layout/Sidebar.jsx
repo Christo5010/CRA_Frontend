@@ -29,8 +29,7 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
       setCraSubMenuOpen(false);
     }
      if (
-      location.pathname.startsWith('/mes-documents') ||
-      location.pathname.startsWith('/mes-absences')
+      location.pathname.startsWith('/mes-documents') 
     ){
       setDocsSubMenuOpen(true);
     } else {
@@ -122,6 +121,7 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
           )}
           
           {isConsultant && (
+            <>
             <li>
               <button
                 onClick={() => setDocsSubMenuOpen(!isDocsSubMenuOpen)}
@@ -140,15 +140,16 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
                       Mes CRA
                     </NavLink>
                   </li>
-                  <li>
-                    <NavLink to="/mes-absences" className={subNavLinkClass}>
-                      <Calendar className="w-4 h-4 mr-3" />
-                      Mes absences
-                    </NavLink>
-                  </li>
                 </ul>
               )}
             </li>
+            <li>
+              <NavLink to="/mes-absences" className={navLinkClass}>
+                <Calendar className="w-5 h-5 mr-3" />
+                Mes absences
+              </NavLink>
+            </li>
+            </>
           )}
           
           {user?.role === 'admin' && (
@@ -251,6 +252,7 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
                 </li>
               )}
               {isConsultant && (
+                <>
                 <li>
                   <button
                     onClick={() => setDocsSubMenuOpen(!isDocsSubMenuOpen)}
@@ -272,12 +274,27 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
                     </ul>
                   )}
                 </li>
+                <li>
+                  <NavLink to="/mes-absences" className={navLinkClass}>
+                    <Calendar className="w-5 h-5 mr-3" />
+                    Mes absences
+                  </NavLink>
+                </li>
+              </>
               )}
               {user?.role === 'admin' && (
                 <li>
                   <NavLink to="/accounts" className={navLinkClass} onClick={onClose}>
                     <Users className="w-5 h-5 mr-3" />
                     Comptes
+                  </NavLink>
+                </li>
+              )}
+              {isManagerOrAdmin && (
+                <li>
+                  <NavLink to="/gestion-absences" className={navLinkClass}>
+                    <Calendar className="w-5 h-5 mr-3" />
+                    Gestion des absences
                   </NavLink>
                 </li>
               )}
