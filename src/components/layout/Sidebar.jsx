@@ -16,7 +16,7 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
 
     const navItems = [
         { to: "/mon-cra", icon: <Calendar className="w-5 h-5" />, text: "Mon CRA", roles: ['consultant', 'manager', 'admin'] },
-        { to: "/mes-absences", icon: <Sun className="w-5 h-5" />, text: "Mes Absences", roles: ['consultant', 'manager', 'admin'] },
+        { to: "/mes-absences", icon: <Sun className="w-5 h-5" />, text: "Mes Absences", roles: ['consultant'] },
         { to: "/cra", icon: <Briefcase className="w-5 h-5" />, text: "Gestion CRA", roles: ['manager', 'admin'] },
         { to: "/gestion-absences", icon: <ClipboardCheck className="w-5 h-5" />, text: "Gestion Absences", roles: ['manager', 'admin'] },
         { to: "/dashboard", icon: <BarChart2 className="w-5 h-5" />, text: "Dashboard", roles: ['manager', 'admin'] },
@@ -133,34 +133,41 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
                                 </NavLink>
                             ))}
                         </nav>
-                        <div className="p-4 border-t border-gray-700">
-                            <div className="p-3 bg-gray-700/50 rounded-lg mb-4">
-                                <p className="font-semibold">{user?.name || user?.email}</p>
-                                <p className="text-sm text-gray-400">{user?.role}</p>
+                        <div className="border-t border-gray-700">
+                            <div className="space-x-3 flex items-center px-4 pt-4 text-sm font-medium rounded-lg transition-colors">
+                              <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center text-lg font-semibold">
+                                {user?.name ? user.name.charAt(0).toUpperCase() : user?.email?.charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <p className="text-sm font-semibold">{user?.name || user?.email}</p>
+                                <p className="text-xs text-gray-400">{user?.role}</p>
+                              </div>
                             </div>
-                            <NavLink
-                              to="/account-settings"
-                              onClick={onclose}
-                              className={({ isActive }) =>
-                                `flex items-center w-full px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${
-                                  isActive
-                                    ? 'bg-gray-900 text-white'
-                                    : 'text-gray-400 hover:bg-gray-700 hover:text-white'
-                                }`
-                              }
-                            >
-                              <Settings className="w-5 h-5 mr-3" />
-                              Paramètres du compte
-                            </NavLink>
+                            <div className="p-4">
+                              <NavLink
+                                to="/account-settings"
+                                onClick={onclose}
+                                className={({ isActive }) =>
+                                  `flex items-center w-full px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                                    isActive
+                                      ? 'bg-gray-900 text-white'
+                                      : 'text-gray-400 hover:bg-gray-700 hover:text-white'
+                                  }`
+                                }
+                              >
+                                <Settings className="w-5 h-5 mr-3" />
+                                Paramètres du compte
+                              </NavLink>
 
-                            <Button
-                                onClick={() => { handleSignOut(); onClose(); }}
-                                variant="ghost"
-                                className="w-full justify-start text-gray-400 hover:bg-gray-700 hover:text-white"
-                            >
-                                <LogOut className="w-5 h-5 mr-3" />
-                                Déconnexion
-                            </Button>
+                              <Button
+                                  onClick={() => { handleSignOut(); onClose(); }}
+                                  variant="ghost"
+                                  className="w-full justify-start text-gray-400 hover:bg-gray-700 hover:text-white"
+                              >
+                                  <LogOut className="w-5 h-5 mr-3" />
+                                  Déconnexion
+                              </Button>
+                            </div>
                         </div>
                     </aside>
                 </div>

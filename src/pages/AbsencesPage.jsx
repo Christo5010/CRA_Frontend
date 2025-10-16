@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Send, PlusCircle, AlertCircle } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
@@ -31,7 +31,7 @@ const AbsenceStatusBadge = ({ status }) => {
 
 const AbsencesPage = () => {
   const { user } = useAuth();
-  const { myAbsences, requestAbsence, refreshMyAbsences } = useAppData();
+  const { myAbsences, requestAbsence, refreshMyAbsences, approvedAbsences, fetchApprovedAbsencesForMonth } = useAppData();
   const { toast } = useToast();
   const [dateRange, setDateRange] = useState();
   const [reason, setReason] = useState('');
@@ -43,6 +43,27 @@ const AbsencesPage = () => {
     return myAbsences
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   }, [myAbsences]);
+
+  // Fetch approved absences of the current user for the month shown/selected, to disable those days
+  const monthForRange = useMemo(() => {
+    const base = dateRange?.from ? dateRange.from : new Date();
+    return new Date(base.getFullYear(), base.getMonth(), 1);
+  }, [dateRange]);
+
+  useEffect(() => {
+    if (!user) return;
+    const monthStr = `${monthForRange.getFullYear()}-${String(monthForRange.getMonth() + 1).padStart(2, '0')}`;
+    fetchApprovedAbsencesForMonth(user.id, monthStr);
+  }, [user, monthForRange, fetchApprovedAbsencesForMonth]);
+
+  const disabledDays = useMemo(() => {
+    if (!approvedAbsences || approvedAbsences.length === 0) return [];
+    // Build ranges for DayPicker disabled prop
+    return approvedAbsences.map(abs => ({
+      from: new Date(abs.start_date),
+      to: new Date(abs.end_date)
+    }));
+  }, [approvedAbsences]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -113,6 +134,7 @@ const AbsencesPage = () => {
                   mode="range"
                   selected={dateRange}
                   onSelect={setDateRange}
+                  disabled={disabledDays}
                   footer={footer}
                   locale={fr}
                   showOutsideDays
