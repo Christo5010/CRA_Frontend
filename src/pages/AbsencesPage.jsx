@@ -60,8 +60,8 @@ const AbsencesPage = () => {
     if (!approvedAbsences || approvedAbsences.length === 0) return [];
     // Build ranges for DayPicker disabled prop
     return approvedAbsences.map(abs => ({
-      from: new Date(abs.start_date),
-      to: new Date(abs.end_date)
+      from: parseISO(abs.start_date),
+      to: parseISO(abs.end_date)
     }));
   }, [approvedAbsences]);
 
@@ -78,8 +78,8 @@ const AbsencesPage = () => {
 
     setSubmitting(true);
     const result = await requestAbsence({
-      start_date: dateRange.from.toISOString().split('T')[0],
-      end_date: dateRange.to.toISOString().split('T')[0],
+      start_date: format(dateRange.from, 'yyyy-MM-dd'),
+      end_date: format(dateRange.to, 'yyyy-MM-dd'),
       type: reason,
       reason: reason,
     });

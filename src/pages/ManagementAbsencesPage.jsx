@@ -46,6 +46,7 @@ import {
 } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { useToast } from '@/components/ui/use-toast';
 
 const AbsenceStatusBadge = ({ status }) => {
   const baseClasses = "px-2 py-1 text-xs font-semibold rounded-full inline-block";
@@ -116,25 +117,51 @@ const AbsencesTable = ({ absences, showActions = false, onApprove, onRefuseTrigg
   </TooltipProvider>
 );
 
-const CreateAbsenceDialog = ({ consultants, onCreate }) => {
+const CreateAbsenceDialog = ({ consultants, onCreate, approvedAbsences }) => {
   const [consultantId, setConsultantId] = useState('');
   const [dateRange, setDateRange] = useState({ from: undefined, to: undefined });
   const [reason, setReason] = useState('');
   const [isDialogOpen, setDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
 
-  const handleSubmit = () => {
-    if (consultantId && dateRange.from && dateRange.to && reason) {
-      onCreate({
+  const consultantApprovedRanges = useMemo(() => {
+    if (!consultantId) return [];
+    return (approvedAbsences || [])
+      .filter(a => a.user_id === consultantId)
+      .map(a => ({ from: parseISO(a.start_date), to: parseISO(a.end_date) }));
+  }, [consultantId, approvedAbsences]);
+
+  const isOverlap = (from, to) => {
+    if (!from || !to) return false;
+    const start = new Date(from);
+    const end = new Date(to);
+    return consultantApprovedRanges.some(r => !(end < r.from || start > r.to));
+  };
+
+  const handleSubmit = async () => {
+    if (!consultantId || !dateRange.from || !dateRange.to || !reason) return;
+    if (isOverlap(dateRange.from, dateRange.to)) {
+      toast({ variant: 'destructive', title: 'Période indisponible', description: "Ces dates chevauchent déjà une absence approuvée pour ce consultant." });
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const result = await onCreate({
         user_id: consultantId,
         start_date: dateRange.from,
         end_date: dateRange.to,
         reason: reason,
       });
-      setDialogOpen(false);
-      // Reset form
-      setConsultantId('');
-      setDateRange({ from: undefined, to: undefined });
-      setReason('');
+      if (!result || result.success) {
+        setDialogOpen(false);
+        // Reset form
+        setConsultantId('');
+        setDateRange({ from: undefined, to: undefined });
+        setReason('');
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -146,7 +173,7 @@ const CreateAbsenceDialog = ({ consultants, onCreate }) => {
           Créer une absence
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="w-[95vw] sm:max-w-[520px] md:max-w-[640px]">
         <DialogHeader>
           <DialogTitle>Créer une absence pour un consultant</DialogTitle>
           <DialogDescription>
@@ -154,7 +181,7 @@ const CreateAbsenceDialog = ({ consultants, onCreate }) => {
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
             <Label htmlFor="consultant" className="text-right">Consultant</Label>
             <Select onValueChange={setConsultantId} value={consultantId}>
               <SelectTrigger id="consultant" className="col-span-3">
@@ -165,7 +192,7 @@ const CreateAbsenceDialog = ({ consultants, onCreate }) => {
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
             <Label htmlFor="date" className="text-right">Période</Label>
             <Popover>
               <PopoverTrigger asChild>
@@ -200,11 +227,12 @@ const CreateAbsenceDialog = ({ consultants, onCreate }) => {
                   onSelect={setDateRange}
                   numberOfMonths={1}
                   locale={fr}
+                  disabled={consultantApprovedRanges}
                 />
               </PopoverContent>
             </Popover>
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
             <Label htmlFor="reason" className="text-right">Motif</Label>
             <Select onValueChange={setReason} value={reason}>
               <SelectTrigger id="reason" className="col-span-3">
@@ -223,8 +251,8 @@ const CreateAbsenceDialog = ({ consultants, onCreate }) => {
           <DialogClose asChild>
             <Button variant="outline">Annuler</Button>
           </DialogClose>
-          <Button onClick={handleSubmit} disabled={!consultantId || !dateRange.from || !dateRange.to || !reason}>
-            Créer et Approuver
+          <Button onClick={handleSubmit} disabled={isSubmitting || !consultantId || !dateRange.from || !dateRange.to || !reason}>
+            {isSubmitting ? 'Création…' : 'Créer et Approuver'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -233,7 +261,7 @@ const CreateAbsenceDialog = ({ consultants, onCreate }) => {
 };
 
 const ManagementAbsencesPage = () => {
-  const { profiles, listAllAbsences, decideAbsence } = useAppData();
+  const { profiles, listAllAbsences, decideAbsence, createAdminApprovedAbsence, profile } = useAppData();
   const [refusalReason, setRefusalReason] = useState('');
   const [selectedAbsence, setSelectedAbsence] = useState(null);
   const [isRefusalDialogOpen, setRefusalDialogOpen] = useState(false);
@@ -372,10 +400,36 @@ const ManagementAbsencesPage = () => {
     setSelectedAbsence(null);
   }
 
+  const handleCreateAbsence = async ({ user_id, start_date, end_date, reason }) => {
+    const payload = {
+      user_id,
+      start_date: typeof start_date === 'string' ? start_date : format(start_date, 'yyyy-MM-dd'),
+      end_date: typeof end_date === 'string' ? end_date : format(end_date, 'yyyy-MM-dd'),
+      type: reason,
+      reason,
+    };
+    const resp = await createAdminApprovedAbsence(payload);
+    if (resp.success) {
+      const refresh = await listAllAbsences();
+      if (refresh.success) {
+        const absencesWithNames = refresh.data.map(absence => {
+          const p = profiles.find(pp => pp.id === absence.user_id);
+          return { ...absence, consultantName: p?.name || 'Inconnu' };
+        });
+        setAllAbsences(absencesWithNames);
+      }
+    }
+  };
+
+  const isAdminOrManager = profile?.role === 'admin' || profile?.role === 'manager';
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }} className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Gestion des Absences</h1>
+            {isAdminOrManager && (
+              <CreateAbsenceDialog consultants={consultants} onCreate={handleCreateAbsence} approvedAbsences={approvedAbsences} />
+            )}
       </div>
 
       <Card>
@@ -421,8 +475,12 @@ const ManagementAbsencesPage = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Suivi des demandes</CardTitle>
-          <CardDescription>Gérez les demandes d'absence en attente et consultez l'historique.</CardDescription>
+          <div className="flex items-center justify-between w-full">
+            <div>
+              <CardTitle>Suivi des demandes</CardTitle>
+              <CardDescription>Gérez les demandes d'absence en attente et consultez l'historique.</CardDescription>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="pending">

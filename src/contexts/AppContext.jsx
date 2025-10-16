@@ -312,6 +312,20 @@ export const AppProvider = ({ children }) => {
         }
     };
 
+    // Admin/Manager: create approved absence for a consultant
+    const createAdminApprovedAbsence = async ({ user_id, start_date, end_date, type, reason }) => {
+        try {
+            const resp = await apiClient.post('/absences/admin/create', { user_id, start_date, end_date, type, reason });
+            if (resp.data.success) {
+                toast({ title: "Absence créée et approuvée." });
+                return { success: true, data: resp.data.data };
+            }
+            return { success: false, error: resp.data.message };
+        } catch (error) {
+            return { success: false, error: error.response?.data?.message || "Échec de la création de l'absence" };
+        }
+    };
+
     const value = useMemo(() => ({
         clients,
         profiles,
@@ -331,6 +345,7 @@ export const AppProvider = ({ children }) => {
         fetchApprovedAbsencesForMonth,
         listAllAbsences,
         decideAbsence,
+        createAdminApprovedAbsence,
     }), [clients, profiles, cras, actionLogs, loading, fetchData, logAction, user, myAbsences, approvedAbsences]);
 
     return (
