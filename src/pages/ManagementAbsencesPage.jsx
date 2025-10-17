@@ -6,7 +6,7 @@ import { useAppData } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Check, X, AlertCircle, Calendar as CalendarIcon, PlusCircle } from 'lucide-react';
+import { Check, X, AlertCircle, Calendar as CalendarIcon, PlusCircle, Trash2 } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -58,7 +58,7 @@ const AbsenceStatusBadge = ({ status }) => {
   return <span className={`${baseClasses} ${statusClasses[status] || 'bg-gray-100 text-gray-800'}`}>{status}</span>;
 };
 
-const AbsencesTable = ({ absences, showActions = false, onApprove, onRefuseTrigger }) => (
+const AbsencesTable = ({ absences, showActions = false, onApprove, onRefuseTrigger, onDeleteTrigger, canDelete = false }) => (
   <TooltipProvider>
     <Table>
       <TableHeader>
@@ -89,6 +89,11 @@ const AbsencesTable = ({ absences, showActions = false, onApprove, onRefuseTrigg
                     <Button size="icon" variant="outline" className="text-red-600 hover:bg-red-50" onClick={() => onRefuseTrigger(absence)}>
                       <X className="h-4 w-4" />
                     </Button>
+                    {canDelete ? (
+                      <Button size="icon" variant="outline" className="text-destructive hover:bg-red-50" onClick={() => onDeleteTrigger(absence)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    ) : null}
                   </div>
                 ) : (
                   absence.status === 'Rejected' && absence.manager_comment && (
@@ -261,10 +266,12 @@ const CreateAbsenceDialog = ({ consultants, onCreate, approvedAbsences }) => {
 };
 
 const ManagementAbsencesPage = () => {
-  const { profiles, listAllAbsences, decideAbsence, createAdminApprovedAbsence, profile } = useAppData();
+  const { profiles, listAllAbsences, decideAbsence, createAdminApprovedAbsence, deleteAbsence, profile } = useAppData();
   const [refusalReason, setRefusalReason] = useState('');
   const [selectedAbsence, setSelectedAbsence] = useState(null);
+  const [deleteCandidate, setDeleteCandidate] = useState(null);
   const [isRefusalDialogOpen, setRefusalDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [allAbsences, setAllAbsences] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -372,6 +379,28 @@ const ManagementAbsencesPage = () => {
   const handleRefuseTrigger = (absence) => {
     setSelectedAbsence(absence);
     setRefusalDialogOpen(true);
+  };
+
+  const handleDeleteTrigger = (absence) => {
+    setDeleteCandidate(absence);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteCandidate) return;
+    const result = await deleteAbsence(deleteCandidate.id);
+    if (result.success) {
+      const refreshResult = await listAllAbsences();
+      if (refreshResult.success) {
+        const absencesWithNames = refreshResult.data.map(absence => {
+          const profile = profiles.find(p => p.id === absence.user_id);
+          return { ...absence, consultantName: profile?.name || 'Inconnu' };
+        });
+        setAllAbsences(absencesWithNames);
+      }
+    }
+    setDeleteCandidate(null);
+    setDeleteDialogOpen(false);
   };
 
   const handleRefuseConfirm = async () => {
@@ -489,10 +518,10 @@ const ManagementAbsencesPage = () => {
               <TabsTrigger value="history">Historique ({processedAbsences.length})</TabsTrigger>
             </TabsList>
             <TabsContent value="pending">
-              <AbsencesTable absences={pendingAbsences} showActions={true} onApprove={handleApprove} onRefuseTrigger={handleRefuseTrigger} />
+              <AbsencesTable absences={pendingAbsences} showActions={true} onApprove={handleApprove} onRefuseTrigger={handleRefuseTrigger} onDeleteTrigger={() => {}} canDelete={false} />
             </TabsContent>
             <TabsContent value="history">
-              <AbsencesTable absences={processedAbsences} />
+              <AbsencesTable absences={processedAbsences} showActions={true} onApprove={() => {}} onRefuseTrigger={() => {}} onDeleteTrigger={handleDeleteTrigger} canDelete={profile?.role === 'admin'} />
             </TabsContent>
           </Tabs>
         </CardContent>
@@ -526,6 +555,20 @@ const ManagementAbsencesPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    <AlertDialog open={isDeleteDialogOpen} onOpenChange={(open) => { if (!open) { setDeleteDialogOpen(false); setDeleteCandidate(null); } }}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Supprimer cette absence ?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Cette action est irréversible. L'absence sera supprimée, même si elle était approuvée.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={() => { setDeleteDialogOpen(false); setDeleteCandidate(null); }}>Annuler</AlertDialogCancel>
+          <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-white hover:bg-red-600">Supprimer</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     </motion.div>
   );
 };
