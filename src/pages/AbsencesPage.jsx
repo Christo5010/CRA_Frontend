@@ -31,30 +31,31 @@ const AbsenceStatusBadge = ({ status }) => {
 
 const AbsencesPage = () => {
   const { user } = useAuth();
-  const { myAbsences, requestAbsence, refreshMyAbsences, approvedAbsences, fetchApprovedAbsencesForMonth } = useAppData();
+  const { myAbsences, requestAbsence, refreshMyAbsences, approvedAbsences, fetchApprovedAbsencesForMonth, fetchData } = useAppData();
   const { toast } = useToast();
   const [dateRange, setDateRange] = useState();
   const [reason, setReason] = useState('');
   const [showCustomReason, setShowCustomReason] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // Load data on component mount
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // Fetch approved absences for current month when component mounts
+  useEffect(() => {
+    if (!user) return;
+    const currentMonth = new Date();
+    const monthStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
+    fetchApprovedAbsencesForMonth(user.id, monthStr);
+  }, [user?.id]);
+
   const userAbsences = useMemo(() => {
     if (!myAbsences) return [];
     return myAbsences
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   }, [myAbsences]);
-
-  // Fetch approved absences of the current user for the month shown/selected, to disable those days
-  const monthForRange = useMemo(() => {
-    const base = dateRange?.from ? dateRange.from : new Date();
-    return new Date(base.getFullYear(), base.getMonth(), 1);
-  }, [dateRange]);
-
-  useEffect(() => {
-    if (!user) return;
-    const monthStr = `${monthForRange.getFullYear()}-${String(monthForRange.getMonth() + 1).padStart(2, '0')}`;
-    fetchApprovedAbsencesForMonth(user.id, monthStr);
-  }, [user, monthForRange, fetchApprovedAbsencesForMonth]);
 
   const disabledDays = useMemo(() => {
     if (!approvedAbsences || approvedAbsences.length === 0) return [];

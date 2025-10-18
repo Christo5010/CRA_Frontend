@@ -90,7 +90,7 @@ const CRAPage = () => {
     if (!user) return;
     const monthStr = format(startOfMonth(currentMonth), 'yyyy-MM');
     fetchApprovedAbsencesForMonth(user.id, monthStr);
-  }, [user, currentMonth, fetchApprovedAbsencesForMonth]);
+  }, [user?.id, currentMonth.getFullYear(), currentMonth.getMonth(), fetchApprovedAbsencesForMonth]);
 
   const approvedAbsenceDates = useMemo(() => {
     // Build a set of ISO dates within current month that are approved absences

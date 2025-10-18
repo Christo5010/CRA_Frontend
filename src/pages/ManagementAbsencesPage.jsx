@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { format, parseISO, addDays, startOfToday, isWithinInterval } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -266,7 +266,7 @@ const CreateAbsenceDialog = ({ consultants, onCreate, approvedAbsences }) => {
 };
 
 const ManagementAbsencesPage = () => {
-  const { profiles, listAllAbsences, decideAbsence, createAdminApprovedAbsence, deleteAbsence, profile } = useAppData();
+  const { profiles, listAllAbsences, decideAbsence, createAdminApprovedAbsence, deleteAbsence, profile, fetchData } = useAppData();
   const [refusalReason, setRefusalReason] = useState('');
   const [selectedAbsence, setSelectedAbsence] = useState(null);
   const [deleteCandidate, setDeleteCandidate] = useState(null);
@@ -276,8 +276,13 @@ const ManagementAbsencesPage = () => {
   const [allAbsences, setAllAbsences] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Load data on component mount
+  useEffect(() => {
+    fetchData();
+  }, []);
+
   // Fetch absences on component mount
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchAbsences = async () => {
       setLoading(true);
       const result = await listAllAbsences();
@@ -291,7 +296,7 @@ const ManagementAbsencesPage = () => {
       setLoading(false);
     };
     fetchAbsences();
-  }, [profiles, listAllAbsences]);
+  }, [profiles.length]);
 
   const consultants = useMemo(() => profiles.filter(p => p.role === 'consultant'), [profiles]);
   const pendingAbsences = allAbsences.filter(l => l.status === 'Pending');

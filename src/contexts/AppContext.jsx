@@ -326,6 +326,19 @@ export const AppProvider = ({ children }) => {
         }
     };
 
+    const deleteAbsence = async (absenceId) => {
+        try {
+            const resp = await apiClient.delete(`/absences/${absenceId}`);
+            if (resp.data.success) {
+                toast({ title: "Absence supprimée." });
+                return { success: true };
+            }
+            return { success: false, error: resp.data.message };
+        } catch (error) {
+            return { success: false, error: error.response?.data?.message || "Échec de la suppression de l'absence" };
+        }
+    };
+
     const value = useMemo(() => ({
         clients,
         profiles,
@@ -346,6 +359,7 @@ export const AppProvider = ({ children }) => {
         listAllAbsences,
         decideAbsence,
         createAdminApprovedAbsence,
+        deleteAbsence,
     }), [clients, profiles, cras, actionLogs, loading, fetchData, logAction, user, myAbsences, approvedAbsences]);
 
     return (

@@ -31,12 +31,17 @@ const LeaveStatusBadge = ({ status }) => {
 
 const CongesPage = () => {
   const { user } = useAuth();
-  const { myAbsences, requestAbsence, refreshMyAbsences } = useAppData();
+  const { myAbsences, requestAbsence, refreshMyAbsences, fetchData } = useAppData();
   const { toast } = useToast();
   const [dateRange, setDateRange] = useState();
   const [reason, setReason] = useState('');
   const [showCustomReason, setShowCustomReason] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Load data on component mount
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const userLeaves = useMemo(() => {
     if (!myAbsences) return [];

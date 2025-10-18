@@ -100,15 +100,20 @@ const LeavesTable = ({ leaves, showActions = false, onApprove, onRefuseTrigger }
 );
 
 const ManagementCongesPage = () => {
-  const { profiles, listAllAbsences, decideAbsence } = useAppData();
+  const { profiles, listAllAbsences, decideAbsence, fetchData } = useAppData();
   const [refusalReason, setRefusalReason] = useState('');
   const [selectedLeave, setSelectedLeave] = useState(null);
   const [isRefusalDialogOpen, setRefusalDialogOpen] = useState(false);
   const [allLeaves, setAllLeaves] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Load data on component mount
+  useEffect(() => {
+    fetchData();
+  }, []);
+
   // Fetch leaves on component mount
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchLeaves = async () => {
       setLoading(true);
       const result = await listAllAbsences();
@@ -124,7 +129,7 @@ const ManagementCongesPage = () => {
       setLoading(false);
     };
     fetchLeaves();
-  }, [profiles, listAllAbsences]);
+  }, [profiles.length]);
 
   const pendingLeaves = allLeaves.filter(l => l.status === 'Pending');
   const processedLeaves = allLeaves.filter(l => l.status !== 'Pending');
