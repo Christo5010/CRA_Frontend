@@ -38,10 +38,6 @@ const CongesPage = () => {
   const [showCustomReason, setShowCustomReason] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Load data on component mount
-  useEffect(() => {
-    fetchData();
-  }, []);
 
   const userLeaves = useMemo(() => {
     if (!myAbsences) return [];

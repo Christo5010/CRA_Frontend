@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { NavLink } from 'react-router-dom';
 import { useAppData } from '@/contexts/AppContext';
@@ -54,10 +54,6 @@ const DashboardPage = () => {
     });
     const [selectedForReminder, setSelectedForReminder] = useState([]);
 
-
-    useEffect(() => {
-        fetchData();
-    }, []);
 
     const handleFilterChange = (key, value) => {
         setFilters(prev => ({ ...prev, [key]: value }));
