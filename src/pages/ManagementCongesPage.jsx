@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -100,35 +100,31 @@ const LeavesTable = ({ leaves, showActions = false, onApprove, onRefuseTrigger }
 );
 
 const ManagementCongesPage = () => {
-  const { profiles, listAllAbsences, decideAbsence, fetchData } = useAppData();
+  const { profiles, getAllAbsencesCached, refreshAllAbsences, decideAbsence } = useAppData();
   const [refusalReason, setRefusalReason] = useState('');
   const [selectedLeave, setSelectedLeave] = useState(null);
   const [isRefusalDialogOpen, setRefusalDialogOpen] = useState(false);
   const [allLeaves, setAllLeaves] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const hasFetchedRef = useRef(false);
 
-  // Load data on component mount
+  // Load leaves once on mount
   useEffect(() => {
-    fetchData();
-  }, []);
-
-  // Fetch leaves on component mount
-  useEffect(() => {
-    const fetchLeaves = async () => {
-      setLoading(true);
-      const result = await listAllAbsences();
-      if (result.success) {
-        const leavesWithNames = result.data
-          .filter(leave => leave.type === 'Vacances' || leave.type === 'Congés')
-          .map(leave => {
-            const profile = profiles.find(p => p.id === leave.user_id);
-            return { ...leave, consultantName: profile?.name || 'Inconnu' };
-          });
-        setAllLeaves(leavesWithNames);
-      }
-      setLoading(false);
-    };
-    fetchLeaves();
+    if (!hasFetchedRef.current && profiles.length > 0) {
+      hasFetchedRef.current = true;
+      const fetchLeaves = async () => {
+        const result = await getAllAbsencesCached();
+        if (result.success) {
+          const leavesWithNames = result.data
+            .filter(leave => leave.type === 'Vacances' || leave.type === 'Congés')
+            .map(leave => {
+              const profile = profiles.find(p => p.id === leave.user_id);
+              return { ...leave, consultantName: profile?.name || 'Inconnu' };
+            });
+          setAllLeaves(leavesWithNames);
+        }
+      };
+      fetchLeaves();
+    }
   }, [profiles.length]);
 
   const pendingLeaves = allLeaves.filter(l => l.status === 'Pending');
@@ -137,8 +133,7 @@ const ManagementCongesPage = () => {
   const handleApprove = async (leaveId) => {
     const result = await decideAbsence(leaveId, 'approve');
     if (result.success) {
-      // Refresh the leaves list
-      const refreshResult = await listAllAbsences();
+      const refreshResult = await refreshAllAbsences();
       if (refreshResult.success) {
         const leavesWithNames = refreshResult.data
           .filter(leave => leave.type === 'Vacances' || leave.type === 'Congés')
@@ -160,8 +155,7 @@ const ManagementCongesPage = () => {
     if (selectedLeave && refusalReason) {
       const result = await decideAbsence(selectedLeave.id, 'reject', refusalReason);
       if (result.success) {
-        // Refresh the leaves list
-        const refreshResult = await listAllAbsences();
+        const refreshResult = await refreshAllAbsences();
         if (refreshResult.success) {
           const leavesWithNames = refreshResult.data
             .filter(leave => leave.type === 'Vacances' || leave.type === 'Congés')

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Send, PlusCircle, AlertCircle } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
@@ -31,25 +31,20 @@ const AbsenceStatusBadge = ({ status }) => {
 
 const AbsencesPage = () => {
   const { user } = useAuth();
-  const { myAbsences, requestAbsence, refreshMyAbsences, approvedAbsences, fetchApprovedAbsencesForMonth, fetchData } = useAppData();
+  const { myAbsences, requestAbsence, refreshMyAbsences, approvedAbsences, fetchApprovedAbsencesForMonth } = useAppData();
   const { toast } = useToast();
   const [dateRange, setDateRange] = useState();
   const [reason, setReason] = useState('');
   const [showCustomReason, setShowCustomReason] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Load data on component mount
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  // Fetch approved absences for current month when component mounts
+  // Fetch approved absences for current month
   useEffect(() => {
     if (!user) return;
     const currentMonth = new Date();
     const monthStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
     fetchApprovedAbsencesForMonth(user.id, monthStr);
-  }, [user?.id]);
+  }, [user?.id, fetchApprovedAbsencesForMonth]);
 
   const userAbsences = useMemo(() => {
     if (!myAbsences) return [];

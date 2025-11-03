@@ -28,6 +28,8 @@ export const AppProvider = ({ children }) => {
     const [myAbsences, setMyAbsences] = useState([]);
     const [approvedAbsences, setApprovedAbsences] = useState([]);
     const [dataFetched, setDataFetched] = useState(false);
+    // Cache for all absences (manager/admin views)
+    const [allAbsencesCache, setAllAbsencesCache] = useState(null);
 
     const fetchData = useCallback(async (forceRefresh = false) => {
         if (!isAuthenticated || !user) {
@@ -299,11 +301,29 @@ export const AppProvider = ({ children }) => {
         }
     };
 
+    // Cached getters/refreshers for manager/admin absence listings
+    const getAllAbsencesCached = async () => {
+        if (allAbsencesCache) {
+            return { success: true, data: allAbsencesCache };
+        }
+        const resp = await listAllAbsences();
+        if (resp.success) setAllAbsencesCache(resp.data);
+        return resp;
+    };
+
+    const refreshAllAbsences = async () => {
+        const resp = await listAllAbsences();
+        if (resp.success) setAllAbsencesCache(resp.data);
+        return resp;
+    };
+
     const decideAbsence = async (absenceId, action, comment) => {
         try {
             const resp = await apiClient.post(`/absences/${absenceId}/decision`, { action, comment });
             if (resp.data.success) {
                 toast({ title: 'Décision enregistrée.' });
+                // Invalidate cache so pages can show fresh data if they refresh explicitly
+                setAllAbsencesCache(null);
                 return { success: true, data: resp.data.data };
             }
             return { success: false, error: resp.data.message };
@@ -318,6 +338,7 @@ export const AppProvider = ({ children }) => {
             const resp = await apiClient.post('/absences/admin/create', { user_id, start_date, end_date, type, reason });
             if (resp.data.success) {
                 toast({ title: "Absence créée et approuvée." });
+                setAllAbsencesCache(null);
                 return { success: true, data: resp.data.data };
             }
             return { success: false, error: resp.data.message };
@@ -331,6 +352,7 @@ export const AppProvider = ({ children }) => {
             const resp = await apiClient.delete(`/absences/${absenceId}`);
             if (resp.data.success) {
                 toast({ title: "Absence supprimée." });
+                setAllAbsencesCache(null);
                 return { success: true };
             }
             return { success: false, error: resp.data.message };
@@ -357,10 +379,12 @@ export const AppProvider = ({ children }) => {
         refreshMyAbsences,
         fetchApprovedAbsencesForMonth,
         listAllAbsences,
+        getAllAbsencesCached,
+        refreshAllAbsences,
         decideAbsence,
         createAdminApprovedAbsence,
         deleteAbsence,
-    }), [clients, profiles, cras, actionLogs, loading, fetchData, logAction, user, myAbsences, approvedAbsences]);
+    }), [clients, profiles, cras, actionLogs, loading, fetchData, logAction, user, myAbsences, approvedAbsences, allAbsencesCache]);
 
     return (
         <AppContext.Provider value={value}>

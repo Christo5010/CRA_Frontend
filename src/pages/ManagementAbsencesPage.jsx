@@ -266,7 +266,7 @@ const CreateAbsenceDialog = ({ consultants, onCreate, approvedAbsences }) => {
 };
 
 const ManagementAbsencesPage = () => {
-  const { profiles, listAllAbsences, decideAbsence, createAdminApprovedAbsence, deleteAbsence, profile, fetchData } = useAppData();
+  const { profiles, getAllAbsencesCached, refreshAllAbsences, decideAbsence, createAdminApprovedAbsence, deleteAbsence, profile } = useAppData();
   const [refusalReason, setRefusalReason] = useState('');
   const [selectedAbsence, setSelectedAbsence] = useState(null);
   const [deleteCandidate, setDeleteCandidate] = useState(null);
@@ -274,28 +274,24 @@ const ManagementAbsencesPage = () => {
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [allAbsences, setAllAbsences] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const hasFetchedRef = useRef(false);
 
-  // Load data on component mount
+  // Load absences once on mount
   useEffect(() => {
-    fetchData();
-  }, []);
-
-  // Fetch absences on component mount
-  useEffect(() => {
-    const fetchAbsences = async () => {
-      setLoading(true);
-      const result = await listAllAbsences();
-      if (result.success) {
-        const absencesWithNames = result.data.map(absence => {
-          const profile = profiles.find(p => p.id === absence.user_id);
-          return { ...absence, consultantName: profile?.name || 'Inconnu' };
-        });
-        setAllAbsences(absencesWithNames);
-      }
-      setLoading(false);
-    };
-    fetchAbsences();
+    if (!hasFetchedRef.current && profiles.length > 0) {
+      hasFetchedRef.current = true;
+      const fetchAbsences = async () => {
+        const result = await getAllAbsencesCached();
+        if (result.success) {
+          const absencesWithNames = result.data.map(absence => {
+            const profile = profiles.find(p => p.id === absence.user_id);
+            return { ...absence, consultantName: profile?.name || 'Inconnu' };
+          });
+          setAllAbsences(absencesWithNames);
+        }
+      };
+      fetchAbsences();
+    }
   }, [profiles.length]);
 
   const consultants = useMemo(() => profiles.filter(p => p.role === 'consultant'), [profiles]);
@@ -369,8 +365,8 @@ const ManagementAbsencesPage = () => {
   const handleApprove = async (absenceId) => {
     const result = await decideAbsence(absenceId, 'approve');
     if (result.success) {
-      // Refresh the absences list
-      const refreshResult = await listAllAbsences();
+      // Refresh cache then local state
+      const refreshResult = await refreshAllAbsences();
       if (refreshResult.success) {
         const absencesWithNames = refreshResult.data.map(absence => {
           const profile = profiles.find(p => p.id === absence.user_id);
@@ -395,7 +391,7 @@ const ManagementAbsencesPage = () => {
     if (!deleteCandidate) return;
     const result = await deleteAbsence(deleteCandidate.id);
     if (result.success) {
-      const refreshResult = await listAllAbsences();
+      const refreshResult = await refreshAllAbsences();
       if (refreshResult.success) {
         const absencesWithNames = refreshResult.data.map(absence => {
           const profile = profiles.find(p => p.id === absence.user_id);
@@ -412,8 +408,7 @@ const ManagementAbsencesPage = () => {
     if (selectedAbsence && refusalReason) {
       const result = await decideAbsence(selectedAbsence.id, 'reject', refusalReason);
       if (result.success) {
-        // Refresh the absences list
-        const refreshResult = await listAllAbsences();
+        const refreshResult = await refreshAllAbsences();
         if (refreshResult.success) {
           const absencesWithNames = refreshResult.data.map(absence => {
             const profile = profiles.find(p => p.id === absence.user_id);
@@ -444,7 +439,7 @@ const ManagementAbsencesPage = () => {
     };
     const resp = await createAdminApprovedAbsence(payload);
     if (resp.success) {
-      const refresh = await listAllAbsences();
+      const refresh = await refreshAllAbsences();
       if (refresh.success) {
         const absencesWithNames = refresh.data.map(absence => {
           const p = profiles.find(pp => pp.id === absence.user_id);

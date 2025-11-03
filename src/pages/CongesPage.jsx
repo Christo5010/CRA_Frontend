@@ -31,7 +31,7 @@ const LeaveStatusBadge = ({ status }) => {
 
 const CongesPage = () => {
   const { user } = useAuth();
-  const { myAbsences, requestAbsence, refreshMyAbsences, fetchData } = useAppData();
+  const { myAbsences, requestAbsence, refreshMyAbsences } = useAppData();
   const { toast } = useToast();
   const [dateRange, setDateRange] = useState();
   const [reason, setReason] = useState('');
